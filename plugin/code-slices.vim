@@ -3,6 +3,11 @@
 "endif
 "let g:loaded_code_slices = 1
 
+" variable used in a little hack to auto-close slices window since slices
+" window is directly related to buffer which exec the ShowSlices commnand at
+" least for now the less error-prone alternative is to clos that window
+let g:ignore_next_buf_enter = 0
+
 fun! s:show_slices() "{{{
     try
         call s:verify_not_called_from_slices()
@@ -10,7 +15,7 @@ fun! s:show_slices() "{{{
         echohl WarningMsg | echo 'Recursive slices not allowed' | echohl None
         return
     endtry
-
+    call s:prepare_to_auto_hide()
     call s:create_window_if_needed()
     call s:mappings_for_code_slices_window()
 endfunction "}}}
@@ -117,7 +122,7 @@ fun! s:get_lines_from_bounds(bounds) "{{{
     let pattern = '\v^[[:space:]]{' . &ts . '}'
     let correct_lines = 0
 
-    if first_line =~? '\v^[[:space:]]' && &et == 0
+    if first_line =~? '\v^[[:space:]]'
         if &et == 0
             let pattern = '\v^\t'
         endif
@@ -176,6 +181,33 @@ fun! s:find_slice_end() "{{{
         endif
     endfor
     return line('$')
+endfunction "}}}
+
+fun! s:prepare_to_auto_hide() "{{{
+    let b:preserve_buffer = 1
+    augroup prepare_auto_hide
+        au!
+        au BufEnter * call <SID>close_slices_if_needed()
+    augroup END
+endfunction "}}}
+
+fun! s:close_slices_if_needed() "{{{
+    if &ft =~? '\v.*slices$' || expand('%') == 'slices'
+        let g:ignore_next_buf_enter = 1
+        return
+    endif
+
+    if g:ignore_next_buf_enter == 1
+        let g:ignore_next_buf_enter = 0
+    else
+        let slices_window =  bufwinnr('^slices$')
+        exe slices_window . ' wincmd w'
+        close
+        wincmd p
+        augroup prepare_auto_hide
+            au!
+        augroup END
+    endif
 endfunction "}}}
 
 command! ShowSlices call s:show_slices()
