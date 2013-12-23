@@ -3,10 +3,14 @@
 "endif
 "let g:loaded_code_slices = 1
 
-" variable used in a little hack to auto-close slices window since slices
+" variable used in a little hack to auto-close slices window, since slices
 " window is directly related to buffer which exec the ShowSlices commnand at
-" least for now the less error-prone alternative is to clos that window
+" least for now the less error-prone alternative is to close that window
 let g:ignore_next_buf_enter = 0
+
+if !exists( "g:slices_prefered_path" )
+    let g:slices_prefered_path = expand('$HOME') . '/vimfiles/'
+endif
 
 fun! s:show_slices() "{{{
     try
@@ -26,16 +30,46 @@ fun! s:verify_not_called_from_slices() "{{{
     endif
 endfunction "}}}
 
+fun! s:TabMoving (flag) "{{{
+    if getline(line('.')) =~# '\v^Slice.*'
+        normal zo
+        let pos = getpos('.')
+        let pos[1] += 1
+        call cursor(pos[1], pos[2])
+        normal zo
+        return
+    endif
+    if a:flag == 'b'
+        let pos = getpos('.')
+        call cursor(pos[1] - 1, 0)
+    endif
+    let pos = searchpos('\v^Slice.*$', a:flag)
+    if pos[0] == 0
+        call cursor([1, 1])
+        let pos = searchpos('\v^Slice.*$', a:flag)
+        if pos[0] == 0
+            throw 'No Slices'
+        endif
+    endif
+    call setpos('.', pos)
+    call s:TabMoving(a:flag)
+endfunction "}}}
+
 fun! s:mappings_for_code_slices_window() "{{{
     nnoremap <silent><buffer> q :bw<CR>
-    nnoremap <buffer> u <Nop>
-    nnoremap <buffer> p <Nop>
-    nnoremap <buffer> P <Nop>
+    nnoremap <silent><buffer> u <Nop>
+    nnoremap <silent><buffer> p <Nop>
+    nnoremap <silent><buffer> P <Nop>
+    nnoremap <silent><buffer> <Tab> :call <SID>TabMoving('')<CR>
+    nnoremap <silent><buffer> <BS> :call <SID>TabMoving('b')<CR>
     "Insert slice with <CR>
-    nnoremap <buffer> <CR> :call <SID>insert_current_slice()<CR>
+    nnoremap <silent><buffer> <CR> :call <SID>insert_current_slice(1)<CR>
+    nnoremap <silent><buffer> o za
     "Insert slice and return to slices window
-    nnoremap <buffer> <S-CR> :call <SID>insert_current_slice() \|
+    nnoremap <silent><buffer> <leader><CR> :call <SID>insert_current_slice(0) \|
                 \ call <SID>go_to_slices_window()<CR>
+    nnoremap <silent><buffer> <space> :call <SID>insert_current_slice(0) \|
+                \ call <SID>go_to_slices_window()<CR> 
     augroup slices
         au!
         au InsertEnter <buffer> normal 
@@ -49,8 +83,8 @@ fun! s:load_slices(ft)
     for filename in files
         call append(line('$'), readfile(filename))
     endfor
-    1
     1d
+    1
     set nomodifiable
 endfunction
 
@@ -76,7 +110,11 @@ fun! s:go_to_slices_window() "{{{
     silent! execute current_window.'wincmd w'
 endfunction "}}}
 
-fun! s:insert_current_slice() "{{{
+fun! s:insert_current_slice(...) "{{{
+    let auto_hide = 0
+    if a:0 > 0
+        let auto_hide = a:1
+    endif
     let bounds = s:find_slice_bounds()
     if !has_key(bounds, 'slice_start')
         echohl WarningMsg | echo 'Not a slice' | echohl None
@@ -90,8 +128,12 @@ fun! s:insert_current_slice() "{{{
         return
     endif
     execute destination . 'wincmd w'
-
     call s:update_and_format_buffer(lines)
+    let slices_window = bufwinnr('^slices$')
+    if auto_hide != 0
+        execute slices_window. 'wincmd w'
+        close
+    endif
 endfunction "}}}
 
 fun! s:update_and_format_buffer(lines) "{{{
@@ -148,6 +190,9 @@ fun! s:find_slice_bounds() "{{{
     let ret_dict = {}
     if getline('.') =~? '\v^(Slice|Group)'
         normal za
+        if getline('.') =~ '\v^Group'
+            normal j
+        endif
         return ret_dict
     endif
 
