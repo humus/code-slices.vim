@@ -55,6 +55,12 @@ fun! s:TabMoving (flag) "{{{
     call s:TabMoving(a:flag)
 endfunction "}}}
 
+fun! s:insert_current_slice_and_return(close_slices_window) "{{{
+    call <SID>insert_current_slice(a:close_slices_window)
+    call <SID>go_to_slices_window()
+    return "\<Nop>"
+endfunction "}}}
+
 fun! s:mappings_for_code_slices_window() "{{{
     nnoremap <silent><buffer> q :bw<CR>
     nnoremap <silent><buffer> u <Nop>
@@ -68,8 +74,7 @@ fun! s:mappings_for_code_slices_window() "{{{
     "Insert slice and return to slices window
     nnoremap <silent><buffer> <leader><CR> :call <SID>insert_current_slice(0) \|
                 \ call <SID>go_to_slices_window()<CR>
-    nnoremap <silent><buffer> <space> :call <SID>insert_current_slice(0) \|
-                \ call <SID>go_to_slices_window()<CR> 
+    nnoremap <silent><buffer> <space> :call <SID>insert_current_slice_and_return(0) <CR>
     augroup slices
         au!
         au InsertEnter <buffer> normal 
@@ -77,7 +82,7 @@ fun! s:mappings_for_code_slices_window() "{{{
 endfunction "}}}
 
 fun! s:load_slices(ft)
-    set modifiable
+    setl modifiable
     %d
     let files = findfile('slices/' . a:ft . '.slices', &rtp, -1)
     for filename in files
@@ -85,13 +90,13 @@ fun! s:load_slices(ft)
     endfor
     1d
     1
-    set nomodifiable
+    setl nomodifiable
 endfunction
 
 fun! s:create_window_if_needed() "{{{
-    let current_window = bufwinnr('^slices$')
-    let working_window = expand('%')
+    let working_window = bufnr('%')
     let type = &ft
+    let current_window = bufwinnr('^slices$')
     if current_window < 0
         keepalt vertical belowrigh new slices
     else
@@ -100,7 +105,6 @@ fun! s:create_window_if_needed() "{{{
     vertical resize 45
     let b:last_window = working_window
     call s:load_slices(type)
-    set ft=
     exe "set ft=" . type . ".slices"
     setlocal wrap buftype=nowrite bufhidden=wipe nobuflisted noswapfile number
 endfunction "}}}
@@ -130,7 +134,7 @@ fun! s:insert_current_slice(...) "{{{
     execute destination . 'wincmd w'
     call s:update_and_format_buffer(lines)
     let slices_window = bufwinnr('^slices$')
-    if auto_hide != 0
+    if auto_hide != 0 && slices_window != -1
         execute slices_window. 'wincmd w'
         close
     endif
@@ -146,7 +150,7 @@ fun! s:update_and_format_buffer(lines) "{{{
         let working_lines[line_index] = substitute(working_lines[line_index], '^', line_spaces, '')
     endfor
 
-    if getline(line('.')) =~? '\v^[[:space:]]+$'
+    if getline(line('.')) =~? '\v^[[:space:]]*$'
         call setline(line('.'), working_lines[0])
         let working_lines = working_lines[1:]
     endif
@@ -246,6 +250,9 @@ fun! s:close_slices_if_needed() "{{{
         let g:ignore_next_buf_enter = 0
     else
         let slices_window =  bufwinnr('^slices$')
+        if slices_window == -1
+            return
+        endif
         exe slices_window . ' wincmd w'
         close
         wincmd p
