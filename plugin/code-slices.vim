@@ -11,6 +11,9 @@ let g:ignore_next_buf_enter = 0
 if !exists( "g:slices_prefered_path" )
     let g:slices_prefered_path = expand('$HOME') . '/vimfiles/'
 endif
+if !exists("g:keep_open_unactive_slices")
+    let g:keep_open_unactive_slices=0
+endif
 
 fun! s:show_slices() "{{{
     try
@@ -31,12 +34,12 @@ fun! s:verify_not_called_from_slices() "{{{
 endfunction "}}}
 
 fun! s:TabMoving (flag) "{{{
+    call s:close_when_needed()
     if getline(line('.')) =~# '\v^Slice.*'
-        normal zo
+        normal zv
         let pos = getpos('.')
-        let pos[1] += 1
-        call cursor(pos[1], pos[2])
-        normal zo
+        call cursor(pos[1]+1, pos[2])
+        normal zv
         return
     endif
     if a:flag == 'b'
@@ -50,9 +53,16 @@ fun! s:TabMoving (flag) "{{{
         if pos[0] == 0
             throw 'No Slices'
         endif
+        normal za
     endif
     call setpos('.', pos)
     call s:TabMoving(a:flag)
+endfunction "}}}
+
+fun! s:close_when_needed() "{{{
+    if g:keep_open_unactive_slices == 0
+        normal! zc
+    endif
 endfunction "}}}
 
 fun! s:insert_current_slice_and_return(close_slices_window) "{{{
@@ -62,10 +72,11 @@ fun! s:insert_current_slice_and_return(close_slices_window) "{{{
 endfunction "}}}
 
 fun! s:mappings_for_code_slices_window() "{{{
-    nnoremap <silent><buffer> q :bw<CR>
+    nnoremap <silent><buffer> q ZZ
     nnoremap <silent><buffer> u <Nop>
     nnoremap <silent><buffer> p <Nop>
     nnoremap <silent><buffer> P <Nop>
+    nnoremap <silent><buffer> <C-o> <Nop>
     nnoremap <silent><buffer> <Tab> :call <SID>TabMoving('')<CR>
     nnoremap <silent><buffer> <BS> :call <SID>TabMoving('b')<CR>
     "Insert slice with <CR>
@@ -193,9 +204,10 @@ fun! s:find_slice_bounds() "{{{
 
     let ret_dict = {}
     if getline('.') =~? '\v^(Slice|Group)'
-        normal za
         if getline('.') =~ '\v^Group'
-            normal j
+            let pos = getpos('.')
+            call cursor(pos[1] + 1, pos[2])
+            normal zv
         endif
         return ret_dict
     endif
@@ -262,5 +274,16 @@ fun! s:close_slices_if_needed() "{{{
     endif
 endfunction "}}}
 
+fun! Set_Bot_FT() "{{{
+    if &ft =~ '\v\.'
+        return
+    endif
+    let additional_ft = expand('%:t:r')
+    let ft_slices = &ft
+    exe "set ft=" . additional_ft . '.' . ft_slices
+endfunction "}}}
+
+au FileType slices call Set_Bot_FT()
+au FileType slices normal zR
 command! ShowSlices call s:show_slices()
 
