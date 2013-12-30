@@ -109,7 +109,9 @@ fun! s:create_window_if_needed() "{{{
     let type = &ft
     let current_window = bufwinnr('^slices$')
     if current_window < 0
-        keepalt vertical belowrigh new slices
+        keepalt vertical belowrigh new
+        setlocal wrap buftype=nowrite bufhidden=wipe nobuflisted noswapfile number
+        f slices
     else
         call s:go_to_slices_window()
     endif
@@ -117,7 +119,6 @@ fun! s:create_window_if_needed() "{{{
     let b:last_window = working_window
     call s:load_slices(type)
     exe "set ft=" . type . ".slices"
-    setlocal wrap buftype=nowrite bufhidden=wipe nobuflisted noswapfile number
 endfunction "}}}
 
 fun! s:go_to_slices_window() "{{{
@@ -143,7 +144,7 @@ fun! s:insert_current_slice(...) "{{{
         return
     endif
     execute destination . 'wincmd w'
-    call s:update_and_format_buffer(lines)
+    call Update_and_format_buffer(lines)
     let slices_window = bufwinnr('^slices$')
     if auto_hide != 0 && slices_window != -1
         execute slices_window. 'wincmd w'
@@ -151,7 +152,7 @@ fun! s:insert_current_slice(...) "{{{
     endif
 endfunction "}}}
 
-fun! s:update_and_format_buffer(lines) "{{{
+fun! Update_and_format_buffer(lines) "{{{
     let working_lines = a:lines
     "Preserve indentation
     "0 or more spaces not followed by a space and match all chars in line
@@ -165,12 +166,18 @@ fun! s:update_and_format_buffer(lines) "{{{
         call setline(line('.'), working_lines[0])
         let working_lines = working_lines[1:]
     endif
+
+    call Append_Lines(working_lines)
+    let line_nr = line('.') + len(working_lines)
+    call setpos('.', [0, line_nr, len(getline(line_nr)), 0])
+endfunction "}}}
+
+fun! Append_lines(lines) "{{{
     let line_nr = line('.')
-    for line in working_lines
+    for line in a:lines
         call append(line_nr, line)
         let line_nr += 1
     endfor
-    call setpos('.', [0, line_nr, len(getline(line_nr)), 0])
 endfunction "}}}
 
 fun! s:get_lines_from_bounds(bounds) "{{{
@@ -281,6 +288,19 @@ fun! Set_Bot_FT() "{{{
     let additional_ft = expand('%:t:r')
     let ft_slices = &ft
     exe "set ft=" . additional_ft . '.' . ft_slices
+endfunction "}}}
+
+fun! CreateSliceFromLines(lines) "{{{
+    
+endfunction "}}}
+
+fun! Extract_Lines(line_1, line_2) "{{{
+    let lines = []
+    for line_nr in range(a:line_1, a:line_2)
+        echom line_nr
+        let lines += [getline(line_nr)]
+    endfor
+    return lines
 endfunction "}}}
 
 au FileType slices call Set_Bot_FT()
