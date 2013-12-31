@@ -8,8 +8,11 @@
 " least for now the less error-prone alternative is to close that window
 let g:ignore_next_buf_enter = 0
 
-if !exists( "g:slices_prefered_path" )
-    let g:slices_prefered_path = expand('$HOME') . '/vimfiles/'
+if !exists( "g:slices_preferred_path" )
+    let g:slices_preferred_path = fnameescape(expand('$HOME') . '/.vim')
+    if has('win32')
+        let g:slices_preferred_path = fnameescape(expand('$HOME') . '\vimfiles')
+    endif
 endif
 if !exists("g:keep_open_unactive_slices")
     let g:keep_open_unactive_slices=0
@@ -95,10 +98,14 @@ endfunction "}}}
 fun! s:load_slices(ft)
     setl modifiable
     %d
+    let old_rtp = &rtp
+    let &rtp = g:slices_preferred_path . ',' . &rtp
     let files = findfile('slices/' . a:ft . '.slices', &rtp, -1)
+    echom join(files, '---')
     for filename in files
         call append(line('$'), readfile(filename))
     endfor
+    let &rtp = old_rtp
     1d
     1
     setl nomodifiable
@@ -167,7 +174,7 @@ fun! Update_and_format_buffer(lines) "{{{
         let working_lines = working_lines[1:]
     endif
 
-    call Append_Lines(working_lines)
+    call Append_lines(working_lines)
     let line_nr = line('.') + len(working_lines)
     call setpos('.', [0, line_nr, len(getline(line_nr)), 0])
 endfunction "}}}
@@ -210,7 +217,7 @@ fun! s:find_slice_bounds() "{{{
     endif
 
     let ret_dict = {}
-    if getline('.') =~? '\v^(Slice|Group)'
+    if getline('.') =~ '\v^(Slice|Group)'
         if getline('.') =~ '\v^Group'
             let pos = getpos('.')
             call cursor(pos[1] + 1, pos[2])
@@ -226,10 +233,10 @@ endfunction "}}}
 
 fun! s:find_slice_start() "{{{
     for line_nr in range(line('.'), 0, -1)
-        if getline(line_nr) =~? '\vSlice'
+        if getline(line_nr) =~# '\vSlice'
             return line_nr + 1
         endif
-        if getline(line_nr) =~? '\v^Group'
+        if getline(line_nr) =~# '\v^Group'
             throw 'BAD_FORMAT: No slice after group'
         endif
     endfor
@@ -238,10 +245,10 @@ endfunction "}}}
 fun! s:find_slice_end() "{{{
     let count_empty_lines = 0
     for line_nr in range(line('.') + 1, line('$'))
-        if getline(line_nr) =~? '\v^(Group|Slice)'
+        if getline(line_nr) =~# '\v^(Group|Slice)'
             return line_nr - 1
         endif
-        if getline(line_nr) =~? '\v^$'
+        if getline(line_nr) =~# '\v^$'
             let count_empty_lines += 1
             if count_empty_lines > 1
                 return line_nr
@@ -290,17 +297,50 @@ fun! Set_Bot_FT() "{{{
     exe "set ft=" . additional_ft . '.' . ft_slices
 endfunction "}}}
 
-fun! CreateSliceFromLines(lines) "{{{
-    
-endfunction "}}}
-
 fun! Extract_Lines(line_1, line_2) "{{{
     let lines = []
     for line_nr in range(a:line_1, a:line_2)
-        echom line_nr
         let lines += [getline(line_nr)]
     endfor
     return lines
+endfunction "}}}
+
+fun! s:get_lines_from_file(file_name) "{{{
+    let lines = []
+    if filereadable(a:file_name)
+        let lines = readfile(a:file_name)
+    endif
+    return lines
+endfunction "}}}
+
+fun! New_slice_from_range() range "{{{
+    let slices_file = g:slices_preferred_path . '/slices/' . &ft . '.slices'
+    let lines_in_file = s:get_lines_from_file(slices_file)
+    let lines_in_slice = []
+    if !Has_pending_group_last(lines_in_file)
+        let lines_in_slice += ['Group pending']
+    endif
+
+    let lines_in_slice += ['Slice'] + Extract_Lines(a:firstline, a:lastline)
+    let lines_in_file += lines_in_slice
+
+    call writefile(lines_in_file, slices_file)
+    call Update_slices_window(lines_in_file)
+endfunction "}}}
+
+fun! Update_slices_window(lines_in_slice) "{{{
+    "close slices window
+    "re-create slices-window
+endfunction "}}}
+
+fun! Has_pending_group_last(lines) "{{{
+    let l_lines = reverse(deepcopy(a:lines))
+    for line in l_lines
+        if line =~# '^Group'
+            return line =~? 'pending'
+        endif
+    endfor
+    return 0
 endfunction "}}}
 
 au FileType slices call Set_Bot_FT()
