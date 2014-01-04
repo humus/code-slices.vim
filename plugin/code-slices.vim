@@ -1,12 +1,16 @@
 "if exists( "g:loaded_code_slices" )
     "finish
 "endif
-"let g:loaded_code_slices = 1
+let g:loaded_code_slices = 1
 
 " variable used in a little hack to auto-close slices window, since slices
 " window is directly related to buffer which exec the ShowSlices commnand at
 " least for now the less error-prone alternative is to close that window
 let g:ignore_next_buf_enter = 0
+
+if !exists("g:slices_use_vertical_split")
+    let g:slices_use_vertical_split = 1
+endif
 
 if !exists( "g:slices_preferred_path" )
     let g:slices_preferred_path = fnameescape(expand('$HOME') . '/.vim')
@@ -36,37 +40,6 @@ fun! s:verify_not_called_from_slices() "{{{
     endif
 endfunction "}}}
 
-fun! s:TabMoving (flag) "{{{
-    call s:close_when_needed()
-    if getline(line('.')) =~# '\v^Slice.*'
-        normal zv
-        let pos = getpos('.')
-        call cursor(pos[1]+1, pos[2])
-        normal zv
-        return
-    endif
-    if a:flag == 'b'
-        let pos = getpos('.')
-        call cursor(pos[1] - 1, 0)
-    endif
-    let pos = searchpos('\v^Slice.*$', a:flag)
-    if pos[0] == 0
-        call cursor([1, 1])
-        let pos = searchpos('\v^Slice.*$', a:flag)
-        if pos[0] == 0
-            throw 'No Slices'
-        endif
-        normal za
-    endif
-    call setpos('.', pos)
-    call s:TabMoving(a:flag)
-endfunction "}}}
-
-fun! s:close_when_needed() "{{{
-    if g:keep_open_unactive_slices == 0
-        normal! zc
-    endif
-endfunction "}}}
 
 fun! s:insert_current_slice_and_return(close_slices_window) "{{{
     call <SID>insert_current_slice(a:close_slices_window)
@@ -80,8 +53,6 @@ fun! s:mappings_for_code_slices_window() "{{{
     nnoremap <silent><buffer> p <Nop>
     nnoremap <silent><buffer> P <Nop>
     nnoremap <silent><buffer> <C-o> <Nop>
-    nnoremap <silent><buffer> <Tab> :call <SID>TabMoving('')<CR>
-    nnoremap <silent><buffer> <BS> :call <SID>TabMoving('b')<CR>
     "Insert slice with <CR>
     nnoremap <silent><buffer> <CR> :call <SID>insert_current_slice(1)<CR>
     nnoremap <silent><buffer> o za
@@ -93,6 +64,7 @@ fun! s:mappings_for_code_slices_window() "{{{
         au!
         au InsertEnter <buffer> normal 
     augroup END
+    let b:auto_close_folds=1
 endfunction "}}}
 
 fun! s:load_slices(ft)
@@ -101,7 +73,6 @@ fun! s:load_slices(ft)
     let old_rtp = &rtp
     let &rtp = g:slices_preferred_path . ',' . &rtp
     let files = findfile('slices/' . a:ft . '.slices', &rtp, -1)
-    echom join(files, '---')
     for filename in files
         call append(line('$'), readfile(filename))
     endfor
@@ -116,17 +87,27 @@ fun! s:create_window_if_needed() "{{{
     let type = &ft
     let current_window = bufwinnr('^slices$')
     if current_window < 0
-        keepalt vertical belowrigh new
-        setlocal wrap buftype=nowrite bufhidden=wipe nobuflisted noswapfile number
-        f slices
+        call s:open_slices_window()
     else
         call s:go_to_slices_window()
     endif
-    vertical resize 45
     let b:last_window = working_window
     call s:load_slices(type)
     exe "set ft=" . type . ".slices"
+    let g:ignore_next_buf_enter = 1
 endfunction "}}}
+
+fun! s:open_slices_window()
+    if g:slices_use_vertical_split
+        keepalt vertical botrigh new
+        vertical resize 45
+    else
+        keepalt botright new
+        resize 10
+    endif
+    f slices
+    setlocal wrap buftype=nowrite bufhidden=wipe nobuflisted noswapfile number
+endfunction
 
 fun! s:go_to_slices_window() "{{{
     let current_window = bufwinnr('^slices$')
@@ -259,7 +240,6 @@ fun! s:find_slice_end() "{{{
 endfunction "}}}
 
 fun! s:prepare_to_auto_hide() "{{{
-    let b:preserve_buffer = 1
     augroup prepare_auto_hide
         au!
         au BufEnter * call <SID>close_slices_if_needed()
@@ -313,7 +293,7 @@ fun! s:get_lines_from_file(file_name) "{{{
     return lines
 endfunction "}}}
 
-fun! New_slice_from_range() range "{{{
+fun! New_slice_from_range(slice_name) range "{{{
     let slices_file = g:slices_preferred_path . '/slices/' . &ft . '.slices'
     let lines_in_file = s:get_lines_from_file(slices_file)
     let lines_in_slice = []
@@ -321,14 +301,16 @@ fun! New_slice_from_range() range "{{{
         let lines_in_slice += ['Group pending']
     endif
 
-    let lines_in_slice += ['Slice'] + Extract_Lines(a:firstline, a:lastline)
+    let slice_name=substitute('Slice ' . a:slice_name, '\v^\s*|\s*$', '' , 'g')
+
+    let lines_in_slice += [slice_name] + Extract_Lines(a:firstline, a:lastline)
     let lines_in_file += lines_in_slice
 
     call writefile(lines_in_file, slices_file)
     call Update_slices_window(lines_in_file)
 endfunction "}}}
 
-fun! Update_slices_window(lines_in_slice) "{{{
+fun! Update_slices_window(lines_in_file) "{{{
     "close slices window
     "re-create slices-window
 endfunction "}}}
@@ -346,4 +328,6 @@ endfunction "}}}
 au FileType slices call Set_Bot_FT()
 au FileType slices normal zR
 command! ShowSlices call s:show_slices()
+command! -range CreateSlice <line1>,<line2> call New_slice_from_range(input("Type slice's name"))
+
 

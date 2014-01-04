@@ -56,7 +56,7 @@ Given:
       new
       slice
 Do:
-  :1,3 call New_slice_from_range()\<CR>
+  :1,3 call New_slice_from_range('funk')\<CR>
   G
   :ShowSlices\<CR>\<BS>\<CR>
 Expect:
@@ -72,7 +72,7 @@ Given:
           new
           slice
 Do:
-  :1,3 call New_slice_from_range()\<CR>
+  :1,3 call New_slice_from_range('funk')\<CR>
   G
   :ShowSlices\<CR>\<BS>\<CR>
 Expect:
