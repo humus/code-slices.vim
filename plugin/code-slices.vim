@@ -107,6 +107,7 @@ fun! s:open_slices_window()
     endif
     f slices
     setlocal wrap buftype=nowrite bufhidden=wipe nobuflisted noswapfile number
+    setf slices
 endfunction
 
 fun! s:go_to_slices_window() "{{{
@@ -303,16 +304,65 @@ fun! New_slice_from_range(slice_name) range "{{{
 
     let slice_name=substitute('Slice ' . a:slice_name, '\v^\s*|\s*$', '' , 'g')
 
-    let lines_in_slice += [slice_name] + Extract_Lines(a:firstline, a:lastline)
+    let lines_in_slice += [slice_name]
+                \ + s:format_slice_lines(Extract_Lines(a:firstline, a:lastline))
+
     let lines_in_file += lines_in_slice
 
     call writefile(lines_in_file, slices_file)
     call Update_slices_window(lines_in_file)
 endfunction "}}}
 
+fun! s:format_slice_lines(lines_in_slice) "{{{
+    let counter = 0
+    let lines = a:lines_in_slice
+    let sample = lines[0]
+    let subexpression = '\s{' . &ts . '}'
+    if !&et
+        let subexpression = '\t'
+    endif
+
+    let substitution_expression = '\v^' . subexpression
+    let search_expression = substitution_expression . subexpression
+
+    while sample =~# search_expression
+        let sample = substitute(sample, substitution_expression, '', '')
+        let counter+=1
+    endwhile
+
+    let fix_expr = '\v^\s{' . &ts * counter . '}'
+
+    if !&et
+        let fix_expr = '\v^\t{' . counter . '}'
+    endif
+
+    let ret_lines = []
+
+    for line in lines
+        call add(ret_lines, substitute(line, fix_expr, '', ''))
+    endfor
+
+    return ret_lines
+endfunction "}}}
+
 fun! Update_slices_window(lines_in_file) "{{{
     "close slices window
-    "re-create slices-window
+    let slices_window = bufwinnr('^slices$')
+    if slices_window == -1
+        return
+    endif
+    exe slices_window . 'wincmd w'
+    setl modifiable
+    %d
+    call setline(1, a:lines_in_file[0])
+    call append(1, a:lines_in_file[1:])
+    normal zM
+    normal G
+    normal zv
+    call SlicesTabMoving('b')
+    setl nomodifiable
+    "go back to previous window
+    wincmd p
 endfunction "}}}
 
 fun! Has_pending_group_last(lines) "{{{

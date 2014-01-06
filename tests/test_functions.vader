@@ -1,7 +1,12 @@
 Before:
+  fun! CreateDirIfNotExists(dirname) "{{{
+      if !isdirectory(a:dirname)
+          call mkdir(a:dirname, 'p')
+      endif
+  endfunction "}}}
   let path_to_script = expand('<sfile>:p:h')
-  call mkdir(path_to_script . '/code-slices')
-  call mkdir(path_to_script . '/code-slices/slices')
+  echom path_to_script
+  call CreateDirIfNotExists(path_to_script . '/code-slices/slices')
   let lines = ['Grup default foo', 'Slice foo 1', 'this']
   let lines += ['is', 'a', 'slice']
   let lines += ['Slice foo 2'
@@ -58,7 +63,9 @@ Given:
 Do:
   :1,3 call New_slice_from_range('funk')\<CR>
   G
-  :ShowSlices\<CR>\<BS>\<CR>
+  :ShowSlices\<CR>
+  :echom join(getline(1, '$'), '\n')\<CR>
+  \<CR>\<BS>\<CR>
 Expect:
       a
       new

@@ -1,10 +1,23 @@
-*code-slice.txt*	For Vim version 7.3 Last change: 2013 Dec 13
+*code-slices.txt*	Reusing slices of code
 
         CODE SLICES REFERENCE MANUAL~
 
 ==============================================================================
 
-CONTENTS                                               *CODE-SLICES-Contents*
+CONTENTS                                                  *code-slices-contents*
 
+1. Purpose                        |code-slices-purpose|
+2. Usage                          |code-slices-usage|
+    2.1 commands                  |code-slices-commands|
+    2.2 Slices window mappings    |slices-window-mappings|
+3. Writing Slices                 |writing-slices|
+
+1. Purpose						   |code-slices-purpose|
+
+This plugin is developed by the need of collect 'slices' of code to reuse them
+on many tasks or projects. In a way that result easy, intuitive, fast and even
+funny
+
+2. Usage						     |code-slices-usage|
 
 " vim:tw=78:ts=8:sw=8:sts=8:noet:ft=help:norl:
