@@ -7,6 +7,7 @@ let g:loaded_code_slices = 1
 " window is directly related to buffer which exec the ShowSlices commnand at
 " least for now the less error-prone alternative is to close that window
 let g:ignore_next_buf_enter = 0
+let g:slices_tab_space = 4
 
 if !exists("g:slices_use_vertical_split")
     let g:slices_use_vertical_split = 1
@@ -142,7 +143,7 @@ fun! s:insert_current_slice(...) "{{{
 endfunction "}}}
 
 fun! Update_and_format_buffer(lines) "{{{
-    let working_lines = a:lines
+    let working_lines = Normalize_indent(a:lines)
     "Preserve indentation
     "0 or more spaces not followed by a space and match all chars in line
     "and substitute with 0 or more matched spaces. Also match empty lines
@@ -159,6 +160,25 @@ fun! Update_and_format_buffer(lines) "{{{
     call Append_lines(working_lines)
     let line_nr = line('.') + len(working_lines)
     call setpos('.', [0, line_nr, len(getline(line_nr)), 0])
+endfunction "}}}
+
+fun! Normalize_indent(lines) "{{{
+  let working_lines = a:lines
+
+  if g:slices_tab_space != &ts
+    for index in range(len(working_lines))
+      let len_indent = len(substitute(working_lines[index], '\v^(\s+)(\s)@!.*', '\1', ''))
+      let indent_level = len_indent / g:slices_tab_space
+      let buffer_indent = ''
+      for position in range(indent_level * &ts)
+        let buffer_indent .= ' '
+      endfor
+      let working_lines[index] = substitute(working_lines[index], '\v^(\s+)(\s)@!', buffer_indent, '')
+    endfor
+  endif
+
+  echom join(working_lines, '@')
+  return working_lines
 endfunction "}}}
 
 fun! Append_lines(lines) "{{{

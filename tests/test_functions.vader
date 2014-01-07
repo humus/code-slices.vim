@@ -4,26 +4,30 @@ Before:
           call mkdir(a:dirname, 'p')
       endif
   endfunction "}}}
-  let path_to_script = expand('<sfile>:p:h')
-  echom path_to_script
-  call CreateDirIfNotExists(path_to_script . 'code-slices/slices')
-  let lines = ['Group default foo', 'Slice foo 1', 'this']
-  let lines += ['is', 'a', 'slice']
-  let lines += ['Slice foo 2', 'This', 'is', 'too']
-  call writefile(lines, path_to_script . 'code-slices/slices/foo.slices')
-  let g:old_path = g:slices_preferred_path
-  let g:slices_preferred_path = path_to_script . 'code-slices/'
-  set ft=foo
-
+  fun! Init_vader_tests() "}}}
+    let g:path_to_script = expand('<sfile>:p:h')
+    call CreateDirIfNotExists(g:path_to_script . 'code-slices/slices')
+    let lines = ['Group default foo', 'Slice foo 1', 'this']
+    let lines += ['is', 'a', 'slice']
+    let lines += ['Slice foo 2', 'This', 'is', 'too']
+    call writefile(lines, g:path_to_script . 'code-slices/slices/foo.slices')
+    let g:old_path = g:slices_preferred_path
+    let g:slices_preferred_path = g:path_to_script . 'code-slices/'
+    set ft=foo
+  endfunction "}}}
+  call Init_vader_tests()
 After:
-  if has('win32')
-    call system('rmdir /q /s ' . path_to_script . 'code-slices')
-  else
-    call system('rm -rf ' . path_to_script . 'code-slices')
-  endif
-  let g:slices_preferred_path = g:old_path
-  unlet g:old_path
-
+  fun! Clean_test_mess()
+    if has('win32')
+      call system('rmdir /q /s ' . g:path_to_script . 'code-slices')
+    else
+      call system('rm -rf ' . g:path_to_script . 'code-slices')
+    endif
+    let g:slices_preferred_path = g:old_path
+    unlet g:old_path
+    unlet g:path_to_script
+  endfunction
+  call Clean_test_mess()
 Given:
 Do:
   :ShowSlices\<CR>\<Tab>\<CR>
@@ -58,37 +62,6 @@ Expect:
   is
   too
   
-Before:
-  setf foo
-  call mkdir(path_to_script . '/code-slices')
-  call mkdir(path_to_script . '/code-slices/slices')
-  let g:old_path = g:slices_preferred_path
-  let g:slices_preferred_path = path_to_script . '/code-slices/'
-After:
-  if has('win32')
-    call system('rmdir /q /s ' . path_to_script . '\code-slices')
-  else
-    call system('rm -rf ' . path_to_script . '/code-slices')
-  endif
-  let g:slices_preferred_path = g:old_path
-Given:
-      a
-      new
-      slice
-Do:
-  :1,3 call New_slice_from_range('funk')\<CR>
-  G
-  :ShowSlices\<CR>
-  :echom join(getline(1, '$'), '\n')\<CR>
-  \<CR>\<BS>\<CR>
-Expect:
-      a
-      new
-      slice
-      a
-      new
-      slice
-
 Given:
           a
           new
@@ -104,3 +77,49 @@ Expect:
           a
           new
           slice
+
+Before:
+  let g:path_to_script = expand('<sfile>:p:h')
+  setf foo
+  call CreateDirIfNotExists(g:path_to_script . '/code-slices/slices')
+  let g:old_path = g:slices_preferred_path
+  let g:slices_preferred_path = g:path_to_script . '/code-slices/'
+After:
+  call Clean_test_mess()
+Given:
+      a
+      new
+      slice
+Do:
+  :1,3 call New_slice_from_range('funk')\<CR>
+  G
+  :ShowSlices\<CR>\<BS>\<CR>
+Expect:
+      a
+      new
+      slice
+      a
+      new
+      slice
+
+
+Before:
+  call Init_vader_tests()
+  let file_name = g:path_to_script . 'code-slices/slices/foo.slices'
+  let lines = readfile(file_name)
+  let lines += ['Slice indented', 'this', '    is', '    a', '        indented', '    slice']
+  call writefile(lines, file_name)
+  set sts=2 ts=2 sw=2
+After:
+  call Clean_test_mess()
+Given:
+    one two
+Do:
+  :ShowSlices\<CR>\<BS>\<CR>
+Expect:
+    one two
+    this
+      is
+      a
+        indented
+      slice
