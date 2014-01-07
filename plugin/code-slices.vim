@@ -294,7 +294,7 @@ fun! s:get_lines_from_file(file_name) "{{{
     return lines
 endfunction "}}}
 
-fun! New_slice_from_range(slice_name) range "{{{
+fun! New_slice_from_range(...) range "{{{
     let slices_file = g:slices_preferred_path . '/slices/' . &ft . '.slices'
     let lines_in_file = s:get_lines_from_file(slices_file)
     let lines_in_slice = []
@@ -302,7 +302,8 @@ fun! New_slice_from_range(slice_name) range "{{{
         let lines_in_slice += ['Group pending']
     endif
 
-    let slice_name=substitute('Slice ' . a:slice_name, '\v^\s*|\s*$', '' , 'g')
+    let slice_name = s:first_arg_or_input(a:0, a:000, "Slice's name: ")
+    let slice_name=substitute('Slice ' . slice_name, '\v^\s*|\s*$', '' , 'g')
 
     let lines_in_slice += [slice_name]
                 \ + s:format_slice_lines(Extract_Lines(a:firstline, a:lastline))
@@ -311,6 +312,16 @@ fun! New_slice_from_range(slice_name) range "{{{
 
     call writefile(lines_in_file, slices_file)
     call Update_slices_window(lines_in_file)
+endfunction "}}}
+
+fun! s:first_arg_or_input(total_args, arg_list, prompt_str) "{{{
+    let retval = ''
+    if a:total_args == 0 || a:arg_list[0] == ''
+        let retval = input(a:prompt_str)
+    else
+        let retval = a:arg_list[0]
+    endif
+    return retval
 endfunction "}}}
 
 fun! s:format_slice_lines(lines_in_slice) "{{{
@@ -375,9 +386,14 @@ fun! Has_pending_group_last(lines) "{{{
     return 0
 endfunction "}}}
 
+fun! s:edit_slices_file() "{{{
+    let path = g:slices_preferred_path . '/slices/' . &ft . '.slices'
+    exe "e " . path
+endfunction "}}}
+
 au FileType slices call Set_Bot_FT()
 au FileType slices normal zR
 command! ShowSlices call s:show_slices()
-command! -range CreateSlice <line1>,<line2> call New_slice_from_range(input("Type slice's name"))
-
+command! -nargs=? -range=1 CreateSlice <line1>,<line2> call New_slice_from_range(<q-args>)
+command! -nargs=? EditSlicesFile call <SID>edit_slices_file()
 

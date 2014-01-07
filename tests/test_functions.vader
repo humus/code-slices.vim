@@ -6,21 +6,20 @@ Before:
   endfunction "}}}
   let path_to_script = expand('<sfile>:p:h')
   echom path_to_script
-  call CreateDirIfNotExists(path_to_script . '/code-slices/slices')
-  let lines = ['Grup default foo', 'Slice foo 1', 'this']
+  call CreateDirIfNotExists(path_to_script . 'code-slices/slices')
+  let lines = ['Group default foo', 'Slice foo 1', 'this']
   let lines += ['is', 'a', 'slice']
-  let lines += ['Slice foo 2'
-    \, 'This', 'is', 'too']
-  call writefile(lines, path_to_script . '/code-slices/slices/foo.slices')
+  let lines += ['Slice foo 2', 'This', 'is', 'too']
+  call writefile(lines, path_to_script . 'code-slices/slices/foo.slices')
   let g:old_path = g:slices_preferred_path
-  let g:slices_preferred_path = path_to_script . '/code-slices/'
+  let g:slices_preferred_path = path_to_script . 'code-slices/'
   set ft=foo
 
 After:
   if has('win32')
-    call system('rmdir /q /s ' . path_to_script . '\code-slices')
+    call system('rmdir /q /s ' . path_to_script . 'code-slices')
   else
-    call system('rm -rf ' . path_to_script . '/code-slices')
+    call system('rm -rf ' . path_to_script . 'code-slices')
   endif
   let g:slices_preferred_path = g:old_path
   unlet g:old_path
@@ -43,6 +42,22 @@ Expect:
       is
       too
 
+Given:
+  
+Do:
+  :EditSlicesFile\<CR>ggyG\<C-o>:sp\<CR>\<C-o>:bd!\<CR>:%d\<CR>P
+Expect:
+  Group default foo
+  Slice foo 1
+  this
+  is
+  a
+  slice
+  Slice foo 2
+  This
+  is
+  too
+  
 Before:
   setf foo
   call mkdir(path_to_script . '/code-slices')

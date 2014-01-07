@@ -6,18 +6,80 @@
 
 CONTENTS                                                  *code-slices-contents*
 
-1. Purpose                        |code-slices-purpose|
-2. Usage                          |code-slices-usage|
-    2.1 commands                  |code-slices-commands|
-    2.2 Slices window mappings    |slices-window-mappings|
-3. Writing Slices                 |writing-slices|
+1. Purpose						   |code-slices-purpose|
+2. Usage						     |code-slices-usage|
+4. Writing And editting Slices 				        |writing-slices|
 
 1. Purpose						   |code-slices-purpose|
 
 This plugin is developed by the need of collect 'slices' of code to reuse them
-on many tasks or projects. In a way that result easy, intuitive, fast and even
-funny
+on across a single or multiple projects in a way that results easy, intuitive,
+fast and even fun.
 
 2. Usage						     |code-slices-usage|
+
+When finishing writing a fragment of code and you know you will use that
+fragment again, it's adviced to save that fragment in a slice. the
+*code-slices* plugin provides a command to do it. To create the slice, just
+select in visual mode the lines you want to keep and execute the command
+*CreateSlice* You can specify a slice name when executing the command or if is
+not provided, the plugin ask you for a name whicha can be empty. For example,
+selecting in visual mode the following lines: >
+    if !isdir('slices')
+	return 1
+    endif
+<
+
+and then executing the command >
+    :CreateSlice if is dir
+<
+
+Will result in the following lines in the related slices file: >
+ Group pending
+ Slice if is dir
+ if !isdir('slices')
+     return 1
+ endif
+<
+The slices file will be stored inside a configutable directory and it's name
+is given by the file type you are editing and the extension *.slices* which is
+stored inside a directory named *slices* which in turn is stored in a a
+configurable path given by the variable *g:slices_preferred_path* for example,
+when editing a *.vim* file if you create a slice, it will be appended to the
+file *vim.slices* in a path like the following: >
+
+ $HOME
+ |- slices
+ | `- vim.slices
+<
+
+After adding a slice you can see it inside the slide collection when you
+execute the *ShowSlices* command.
+
+3. commands					        |show-slices-commands|
+
+ShowSlices~
+
+The *ShowSlices* command shows you the previously created slices in the slices
+window.
+
+CreateSlice~
+
+The *CreateSlice* command creates a new slice with the current line or with the
+visual selected lines
+
+CreateFluentSlice~
+
+The *CreateFluentSlice* creates a special kind of slice which can be inserted
+one line at time
+
+EditSlicesFile~
+
+This command opens for edition the slices file for the current filetype of the
+buffer
+
+4. Writing and editting Slices					|writing-slices|
+
+
 
 " vim:tw=78:ts=8:sw=8:sts=8:noet:ft=help:norl:
