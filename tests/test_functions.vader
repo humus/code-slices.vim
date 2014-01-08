@@ -107,7 +107,7 @@ Before:
   call Init_vader_tests()
   let file_name = g:path_to_script . 'code-slices/slices/foo.slices'
   let lines = readfile(file_name)
-  let lines += ['Slice indented', 'this', '  is', '  a', '    indented', '  slice']
+  let lines += ['Slice indented', '  this', '    is', '    a', '      indented', '    slice']
   call writefile(lines, file_name)
   setlocal sts=5 ts=5 sw=5
 After:
