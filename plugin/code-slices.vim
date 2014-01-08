@@ -7,7 +7,7 @@ let g:loaded_code_slices = 1
 " window is directly related to buffer which exec the ShowSlices commnand at
 " least for now the less error-prone alternative is to close that window
 let g:ignore_next_buf_enter = 0
-let g:slices_tab_space = 4
+let g:slices_tab_space = 2
 
 if !exists("g:slices_use_vertical_split")
     let g:slices_use_vertical_split = 1
@@ -127,6 +127,9 @@ fun! s:insert_current_slice(...) "{{{
         return
     endif
 
+    "if s:is_fluent_slice(bounds)
+    "endif
+
     let lines = s:get_lines_from_bounds(bounds)
     let destination = bufwinnr(b:last_window)
     if destination == -1
@@ -192,7 +195,7 @@ endfunction "}}}
 fun! s:get_lines_from_bounds(bounds) "{{{
     let lines = []
     let first_line = getline(a:bounds['slice_start'])
-    let pattern = '\v^[[:space:]]{' . &ts . '}'
+    let pattern = '\v^[[:space:]]{' . g:slices_tab_space . '}'
     let correct_lines = 0
 
     if first_line =~? '\v^[[:space:]]'
@@ -234,14 +237,17 @@ fun! s:find_slice_bounds() "{{{
 endfunction "}}}
 
 fun! s:find_slice_start() "{{{
-    for line_nr in range(line('.'), 0, -1)
-        if getline(line_nr) =~# '\vSlice'
-            return line_nr + 1
-        endif
-        if getline(line_nr) =~# '\v^Group'
-            throw 'BAD_FORMAT: No slice after group'
-        endif
-    endfor
+  for line_nr in range(line('.'), 0, -1)
+    if getline(line_nr) =~# '\vFluentSlice'
+      return line_nr
+    endif
+    if getline(line_nr) =~# '\vSlice'
+      return line_nr + 1
+    endif
+    if getline(line_nr) =~# '\v^Group'
+      throw 'BAD_FORMAT: No slice after group'
+    endif
+  endfor
 endfunction "}}}
 
 fun! s:find_slice_end() "{{{
@@ -345,65 +351,78 @@ fun! s:first_arg_or_input(total_args, arg_list, prompt_str) "{{{
 endfunction "}}}
 
 fun! s:format_slice_lines(lines_in_slice) "{{{
-    let counter = 0
-    let lines = a:lines_in_slice
-    let sample = lines[0]
-    let subexpression = '\s{' . &ts . '}'
-    if !&et
-        let subexpression = '\t'
-    endif
+  let counter = 0
+  let lines = a:lines_in_slice
+  let sample = lines[0]
+  let subexpression = '\s{' . &ts . '}'
+  if !&et
+    let subexpression = '\t'
+  endif
 
-    let substitution_expression = '\v^' . subexpression
-    let search_expression = substitution_expression . subexpression
+  let substitution_expression = '\v^' . subexpression
+  let search_expression = substitution_expression . subexpression
 
-    while sample =~# search_expression
-        let sample = substitute(sample, substitution_expression, '', '')
-        let counter+=1
-    endwhile
+  while sample =~# search_expression
+    let sample = substitute(sample, substitution_expression, '', '')
+    let counter+=1
+  endwhile
 
-    let fix_expr = '\v^\s{' . &ts * counter . '}'
+  let fix_expr = '\v^\s{' . &ts * counter . '}'
 
-    if !&et
-        let fix_expr = '\v^\t{' . counter . '}'
-    endif
+  if !&et
+    let fix_expr = '\v^\t{' . counter . '}'
+  endif
 
-    let ret_lines = []
+  let ret_lines = []
 
-    for line in lines
-        call add(ret_lines, substitute(line, fix_expr, '', ''))
+  for line in lines
+    call add(ret_lines, s:format_to_slices_indent(substitute(line, fix_expr, '', '')))
+  endfor
+
+  return ret_lines
+endfunction "}}}
+
+fun! s:format_to_slices_indent(line) "{{{
+  let ret_line = a:line
+  if &ts != g:slices_tab_space
+    let indent_level = len(split(ret_line, '\v\s{' . &ts . '}', 1)) - 1
+    let indent = ''
+    for level in range(g:slices_tab_space * indent_level)
+      let indent .= ' '
     endfor
-
-    return ret_lines
+    let ret_line = substitute(ret_line, '\v\s*', indent, '')
+  endif
+  return ret_line
 endfunction "}}}
 
 fun! Update_slices_window(lines_in_file) "{{{
-    "close slices window
-    let slices_window = bufwinnr('^slices$')
-    if slices_window == -1
-        return
-    endif
-    exe slices_window . 'wincmd w'
-    setl modifiable
-    %d
-    call setline(1, a:lines_in_file[0])
-    call append(1, a:lines_in_file[1:])
-    normal zM
-    normal G
-    normal zv
-    call SlicesTabMoving('b')
-    setl nomodifiable
-    "go back to previous window
-    wincmd p
+  "close slices window
+  let slices_window = bufwinnr('^slices$')
+  if slices_window == -1
+    return
+  endif
+  exe slices_window . 'wincmd w'
+  setl modifiable
+  %d
+  call setline(1, a:lines_in_file[0])
+  call append(1, a:lines_in_file[1:])
+  normal zM
+  normal G
+  normal zv
+  call SlicesTabMoving('b')
+  setl nomodifiable
+  "go back to previous window
+  wincmd p
 endfunction "}}}
 
 fun! Has_pending_group_last(lines) "{{{
-    let l_lines = reverse(deepcopy(a:lines))
-    for line in l_lines
-        if line =~# '^Group'
-            return line =~? 'pending'
-        endif
-    endfor
-    return 0
+  let l_lines = reverse(deepcopy(a:lines))
+  for line in l_lines
+    if line =~# '^Group'
+      return line =~? 'pending'
+    endif
+  endfor
+  return 0
 endfunction "}}}
 
 fun! s:edit_slices_file() "{{{
