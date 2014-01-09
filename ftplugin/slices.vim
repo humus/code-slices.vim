@@ -3,7 +3,7 @@ fun! SlicesTabMoving(flag) "{{{
         return "\<Tab>"
     endif
     call s:close_when_needed()
-    if getline(line('.')) =~# '\v^Slice.*'
+    if getline(line('.')) =~# '\v^(Fluent)?Slice.*'
         if b:auto_close_folds
             normal zv
         endif
@@ -18,10 +18,10 @@ fun! SlicesTabMoving(flag) "{{{
         let pos = getpos('.')
         call cursor(pos[1] - 1, 0)
     endif
-    let pos = searchpos('\v^Slice.*$', a:flag)
+    let pos = searchpos('\v^(Fluent)?Slice.*$', a:flag)
     if pos[0] == 0
         call cursor([1, 1])
-        let pos = searchpos('\v^Slice.*$', a:flag)
+        let pos = searchpos('\v^(Fluent)?Slice.*$', a:flag)
         if pos[0] == 0
             throw 'No Slices'
         endif

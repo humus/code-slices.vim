@@ -84,85 +84,135 @@ fun! s:load_slices(ft)
 endfunction
 
 fun! s:create_window_if_needed() "{{{
-    let working_window = bufnr('%')
-    let type = &ft
-    let current_window = bufwinnr('^slices$')
-    if current_window < 0
-        call s:open_slices_window()
-    else
-        call s:go_to_slices_window()
-    endif
-    let b:last_window = working_window
-    call s:load_slices(type)
-    exe "set ft=" . type . ".slices"
-    let g:ignore_next_buf_enter = 1
+  let working_window = bufnr('%')
+  let type = &ft
+  let current_window = bufwinnr('^slices$')
+  if current_window < 0
+    call s:open_slices_window()
+  else
+    call s:go_to_slices_window()
+  endif
+  let b:last_window = working_window
+  call s:load_slices(type)
+  exe "set ft=" . type . ".slices"
+  normal zM
+  call SlicesTabMoving('')
+  normal zv
+  1
+  let g:ignore_next_buf_enter = 1
 endfunction "}}}
 
 fun! s:open_slices_window()
-    if g:slices_use_vertical_split
-        keepalt vertical botrigh new
-        vertical resize 45
-    else
-        keepalt botright new
-        resize 10
-    endif
-    f slices
-    setlocal wrap buftype=nowrite bufhidden=wipe nobuflisted noswapfile number
-    setf slices
+  if g:slices_use_vertical_split
+    keepalt vertical botrigh new
+    vertical resize 45
+  else
+    keepalt botright new
+    resize 10
+  endif
+  f slices
+  setlocal wrap buftype=nowrite bufhidden=wipe nobuflisted noswapfile number
+  setf slices
 endfunction
 
 fun! s:go_to_slices_window() "{{{
-    let current_window = bufwinnr('^slices$')
-    silent! execute current_window.'wincmd w'
+  let current_window = bufwinnr('^slices$')
+  silent! execute current_window.'wincmd w'
 endfunction "}}}
 
 fun! s:insert_current_slice(...) "{{{
-    let auto_hide = 0
-    if a:0 > 0
-        let auto_hide = a:1
-    endif
-    let bounds = s:find_slice_bounds()
-    if !has_key(bounds, 'slice_start')
-        echohl WarningMsg | echo 'Not a slice' | echohl None
-        return
-    endif
+  let auto_hide = 0
+  if a:0 > 0
+    let auto_hide = a:1
+  endif
+  let bounds = s:find_slice_bounds()
+  if !has_key(bounds, 'slice_start')
+    echohl WarningMsg | echo 'Not a slice' | echohl None
+    return
+  endif
 
-    "if s:is_fluent_slice(bounds)
-    "endif
+  if s:perform_fluent_slice_insert(bounds)
+    return
+  endif
 
-    let lines = s:get_lines_from_bounds(bounds)
-    let destination = bufwinnr(b:last_window)
-    if destination == -1
-        echohl WarningMsg | echo 'Window not reacheable' | echohl None
-        return
-    endif
+  let lines = s:get_lines_from_bounds(bounds)
+  if s:switch_to_destination_buffer() == -1
+    echohl WarningMsg | echo 'Window not reacheable' | echohl None
+    return
+  endif
+  call Update_and_format_buffer(lines)
+  let slices_window = bufwinnr('^slices$')
+  if auto_hide != 0 && slices_window != -1
+    execute slices_window. 'wincmd w'
+    close
+  endif
+endfunction "}}}
+
+fun! s:switch_to_destination_buffer() "{{{
+  let destination = bufwinnr(b:last_window)
+  if destination != -1
     execute destination . 'wincmd w'
-    call Update_and_format_buffer(lines)
-    let slices_window = bufwinnr('^slices$')
-    if auto_hide != 0 && slices_window != -1
-        execute slices_window. 'wincmd w'
+  endif
+  return destination
+endfunction "}}}
+
+fun! s:perform_fluent_slice_insert(bounds) "{{{
+  let first_line = getline(a:bounds['slice_start'])
+  let retval = 0
+  if first_line =~# '\vFluentSlice.*'
+    let bounds = a:bounds
+    let bounds['slice_start'] += 1
+
+    let slice_lines = s:get_lines_from_bounds(bounds)
+    let fluent_line_idx = line('.') - bounds['slice_start']
+    if s:switch_to_destination_buffer()
+      if !exists('s:reference_line')
+        let s:reference_line = line('.')
+      endif
+      let slice_lines = s:format_lines_in_slice(slice_lines, s:reference_line)
+      let fluent_line = slice_lines[fluent_line_idx]
+      if getline(line('.')) =~? '\v^[[:space:]]*$'
+        call setline(line('.'), fluent_line)
+      else
+        call Append_lines([fluent_line])
+      endif
+      call setpos('.', [0, line('.') + 1, len(getline(line('.')+1)), 0])
+      let slices_window = bufwinnr('^slices$')
+      execute slices_window . 'wincmd w'
+      call setpos('.', [0, line('.') + 1, virtcol('.'), 0])
+      if line('.') > a:bounds['slice_end'] || line('.') == line('$')
+        unlet s:reference_line
         close
+      endif
     endif
+    let retval = 1
+  endif
+
+  return retval
+endfunction "}}}
+
+fun! s:format_lines_in_slice(lines, linenr) "{{{
+  let working_lines = Normalize_indent(a:lines)
+  "Preserve indentation
+  "0 or more spaces not followed by a space and match all chars in line
+  "and substitute with 0 or more matched spaces. Also match empty lines
+  let line_spaces = substitute(getline(a:linenr), '\v(^[[:space:]]*)([[:space:]])@!.*', '\1', '')
+  for line_index in range(len(working_lines))
+    let working_lines[line_index] = substitute(working_lines[line_index], '^', line_spaces, '')
+  endfor
+  return working_lines
 endfunction "}}}
 
 fun! Update_and_format_buffer(lines) "{{{
-    let working_lines = Normalize_indent(a:lines)
-    "Preserve indentation
-    "0 or more spaces not followed by a space and match all chars in line
-    "and substitute with 0 or more matched spaces. Also match empty lines
-    let line_spaces = substitute(getline(line('.')), '\v(^[[:space:]]*)([[:space:]])@!.*', '\1', '')
-    for line_index in range(len(working_lines))
-        let working_lines[line_index] = substitute(working_lines[line_index], '^', line_spaces, '')
-    endfor
+  let working_lines = s:format_lines_in_slice(a:lines, line('.'))
+  if getline(line('.')) =~? '\v^[[:space:]]*$'
+    call setline(line('.'), working_lines[0])
+    let working_lines = working_lines[1:]
+  endif
 
-    if getline(line('.')) =~? '\v^[[:space:]]*$'
-        call setline(line('.'), working_lines[0])
-        let working_lines = working_lines[1:]
-    endif
-
-    call Append_lines(working_lines)
-    let line_nr = line('.') + len(working_lines)
-    call setpos('.', [0, line_nr, len(getline(line_nr)), 0])
+  call Append_lines(working_lines)
+  let line_nr = line('.') + len(working_lines)
+  call setpos('.', [0, line_nr, len(getline(line_nr)), 0])
 endfunction "}}}
 
 fun! Normalize_indent(lines) "{{{
@@ -170,9 +220,10 @@ fun! Normalize_indent(lines) "{{{
 
   if g:slices_tab_space != &ts
     for index in range(len(working_lines))
-      let len_indent = len(substitute(working_lines[index], '\v^(\s+)(\s)@!.*', '\1', ''))
+      let len_indent = len(substitute(working_lines[index], '\v^(\s*)(\s)@!.*', '\1', ''))
       let indent_level = len_indent / g:slices_tab_space
       let buffer_indent = ''
+      let counter = 0
       for position in range(indent_level * &ts)
         let buffer_indent .= ' '
       endfor
@@ -180,7 +231,6 @@ fun! Normalize_indent(lines) "{{{
     endfor
   endif
 
-  echom join(working_lines, '@')
   return working_lines
 endfunction "}}}
 
@@ -216,24 +266,24 @@ fun! s:get_lines_from_bounds(bounds) "{{{
 endfunction "}}}
 
 fun! s:find_slice_bounds() "{{{
-    let offset = &tabstop
-    if &et == 0
-        let offset = 1
-    endif
+  let offset = &tabstop
+  if &et == 0
+    let offset = 1
+  endif
 
-    let ret_dict = {}
-    if getline('.') =~ '\v^(Slice|Group)'
-        if getline('.') =~ '\v^Group'
-            let pos = getpos('.')
-            call cursor(pos[1] + 1, pos[2])
-            normal zv
-        endif
-        return ret_dict
+  let ret_dict = {}
+  if getline('.') =~ '\v^((Fluent)?Slice|Group)'
+    if getline('.') =~ '\v^Group'
+      let pos = getpos('.')
+      call cursor(pos[1] + 1, pos[2])
+      normal zv
     endif
-
-    let ret_dict['slice_start'] = s:find_slice_start()
-    let ret_dict['slice_end'] = s:find_slice_end()
     return ret_dict
+  endif
+
+  let ret_dict['slice_start'] = s:find_slice_start()
+  let ret_dict['slice_end'] = s:find_slice_end()
+  return ret_dict
 endfunction "}}}
 
 fun! s:find_slice_start() "{{{
@@ -426,12 +476,11 @@ fun! Has_pending_group_last(lines) "{{{
 endfunction "}}}
 
 fun! s:edit_slices_file() "{{{
-    let path = g:slices_preferred_path . '/slices/' . &ft . '.slices'
-    exe "e " . path
+  let path = g:slices_preferred_path . '/slices/' . &ft . '.slices'
+  exe "e " . path
 endfunction "}}}
 
 au FileType slices call Set_Bot_FT()
-au FileType slices normal zR
 command! ShowSlices call s:show_slices()
 command! -nargs=? -range=1 CreateSlice <line1>,<line2> call New_slice_from_range(<q-args>)
 command! -nargs=? EditSlicesFile call <SID>edit_slices_file()

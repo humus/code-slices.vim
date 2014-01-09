@@ -4,11 +4,11 @@ setl foldexpr=GetSlicesFold(v:lnum)
 fun! GetSlicesFold(lnum) "{{{
     let line = getline(a:lnum)
 
-    if line =~# '^Group'
+    if line =~# '\v^Group'
         return '> 1'
     endif
 
-    if line =~# '^Slice'
+    if line =~# '\v^(Fluent)?Slice'
         return '> 2'
     endif
 
