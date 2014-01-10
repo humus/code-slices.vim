@@ -30,7 +30,7 @@ After:
   call Clean_test_mess()
 Given:
 Do:
-  :ShowSlices\<CR>\<Tab>\<CR>
+  :ShowSlices\<CR>\<CR>
 Expect:
   this
   is
@@ -63,8 +63,6 @@ Expect:
           new
           slice
 
-
-
 Before:
   call Init_vader_tests()
   let file_name = g:path_to_script . '/code-slices/slices/foo.slices'
@@ -91,6 +89,24 @@ Before:
   call Init_vader_tests()
 After:
   call Clean_test_mess()
+
+Given:
+  is
+  a
+  fluent
+  slice
+Do:
+  ggV3j:CreateFluentSlice fluent\<CR>G:ShowSlices\<CR>\<BS>\<CR>\<CR>\<CR>\<CR>
+Expect:
+  is
+  a
+  fluent
+  slice
+  is
+  a
+  fluent
+  slice
+
 Given:
   
 Do:
