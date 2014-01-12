@@ -393,7 +393,7 @@ fun! s:get_lines_from_file(file_name) "{{{
   return lines
 endfunction "}}}
 
-fun! New_fluent_slice_from_range(...) "{{{
+fun! New_fluent_slice_from_range(...) range "{{{
   let slice_name = s:first_arg_or_input(a:0, a:000, "Slice's name: ")
   call s:new_slice(slice_name, 'Fluent', a:firstline, a:lastline)
 endfunction "}}}
@@ -404,7 +404,11 @@ fun! New_slice_from_range(...) range "{{{
 endfunction "}}}
 
 fun! s:new_slice(name, prefix, line1, line2) "{{{
-  let slices_file = g:slices_preferred_path . '/slices/' . &ft . '.slices'
+  let slices_dir = g:slices_preferred_path . '/slices/' 
+  if !isdirectory(slices_dir)
+      call mkdir(slices_dir, 'p')
+  endif
+  let slices_file = slices_dir . &ft . '.slices'
   let lines_in_file = s:get_lines_from_file(slices_file)
   let lines_in_slice = []
   if !Has_pending_group_last(lines_in_file)
@@ -513,7 +517,7 @@ endfunction "}}}
 
 au FileType slices call Set_Bot_FT()
 command! ShowSlices call s:show_slices()
-command! -nargs=? -range=1 CreateSlice <line1>,<line2> call New_slice_from_range(<q-args>)
 command! -nargs=? EditSlicesFile call <SID>edit_slices_file()
+command! -nargs=? -range=1       CreateSlice <line1>,<line2> call New_slice_from_range(<q-args>)
 command! -nargs=? -range=1 CreateFluentSlice <line1>,<line2> call New_fluent_slice_from_range(<q-args>)
 
