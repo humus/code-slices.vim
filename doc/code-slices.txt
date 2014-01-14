@@ -60,18 +60,15 @@ execute the *ShowSlices* command.
 
 ShowSlices~
 
-The *ShowSlices* command shows you the previously created slices in the slices
-window.
+Shows you the previously created slices in the slices window.
 
 CreateSlice~
 
-The *CreateSlice* command creates a new slice with the current line or with the
-visual selected lines
+Creates a new slice with the current line or with the visual selected lines
 
 CreateFluentSlice~
 
-The *CreateFluentSlice* creates a special kind of slice which can be inserted
-one line at time
+Creates a special kind of slice which can be inserted one line at time
 
 EditSlicesFile~
 

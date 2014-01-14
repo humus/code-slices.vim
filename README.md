@@ -13,7 +13,7 @@ learn new tools (by reducing the time you have too search in documentation)
 and to collect and reuse boilerplate code so you don't have to type or
 copypaste It
 
-### Installing code-slices
+### Installing
 
 Because code-slices is pathogen compatible you can just clone the repo in your
 bundle plugin:
@@ -21,7 +21,7 @@ bundle plugin:
 
 Similar steps should be performed to use it with Vundle
 
-### Before start
+### First Steps
 
 The default configuration of code-slices is to search for the slices's
 directory in your .vim directory in the structure:
@@ -46,4 +46,6 @@ Slice by using a visual selection
 
 
 ### Writing slices
-
+In general you should not be writing the slices you want to use, those slices
+are created by executing the CreateSlice and CreateFluentSlice commands,
+however you need to manually edit the slices files to clasify them on groups
