@@ -8,7 +8,9 @@ CONTENTS                                                  *code-slices-contents*
 
 1. Purpose						   |code-slices-purpose|
 2. Usage						     |code-slices-usage|
-4. Writing And editting Slices 				        |writing-slices|
+3. Commands						  |code-slices-commands|
+4. Writing And editting slices 				        |writing-slices|
+5. Slices window mappings				  |code-slices-mappings|
 
 1. Purpose						   |code-slices-purpose|
 
@@ -56,7 +58,7 @@ file *vim.slices* in a path like the following: >
 After adding a slice you can see it inside the slide collection when you
 execute the *ShowSlices* command.
 
-3. commands					        |show-slices-commands|
+3. commands					        |code-slices-commands|
 
 ShowSlices~
 
@@ -72,11 +74,84 @@ Creates a special kind of slice which can be inserted one line at time
 
 EditSlicesFile~
 
-This command opens for edition the slices file for the current filetype of the
+This command opens for edition the slices file for the filetype in the current
 buffer
 
 4. Writing and editting Slices					|writing-slices|
 
+Slices created with the *CreateSlice* and *CreateFluentSlice* commands are
+automatically added to the group 'pending' which is created if not exists;
+however this probably is not what you want or need and in this case you need
+to manually edit the slices file. You can edit the file either by directly
+open the file in vim or by using the *EditSlicesFile* . The slices file will
+then appear with syntax higlight of the filetype it represents and with syntax
+higlight for lines beggining with the words *Slice* , *FluentSlice* and
+*Group* which represents the parts of a slices file
 
+If you want to create slices by hand, you should add them to the corresponding
+slices file. The slices file is located inside the *slices* directory inside
+the path *g:slices_preferred_path* I.E if you set the variable as: >
+
+  let g:slices_preferred_path = expand('$HOME') . '/myslices'
+<
+
+The slices file for the python filetype will be located at: >
+
+  ~/myslices/slices/python.slices
+
+The structure of the slices file is very simple. It is organized in Groups and
+Groups contains slices. A slice is contained in the first group matched going
+from the position of the slice to the top. I.E to add a simple python
+slice to the group default python you add the following lines to the slices
+file: >
+
+ Group default python
+ Slice ternary
+ 'success' if true else 'failure'
+<
+To ease the visual scanning of the slices you can use a (by default) 2 space
+indentation. I.E. >
+
+ Group default python
+ Slice ternary
+   'success' if true else 'failure'
+<
+Remember that the special words *Group* , *Slice* and *FluentSlice* always
+starts in the first column with no spaces before.
+
+The plugin support a special type of slices which just insert one line at time
+when hitting the *<CR>* key in the slices windows these slices are called fluent
+slices and inside the slices file, these slices are defined almost with the
+same syntax as the regular slices but with the keyword *FluentSlice* instead
+of *Slice* I.E. >
+
+ Group django
+ Slice from django
+ from django.core.exceptions import PermissionDenied
+ from django.http import Http404
+ from django.http import HttpResponse, HttpResponseNotFound
+ from django.shortcuts import render_to_response
+<
+When you start to the insertion of this slice from the slices window, you
+insert one line at time by hitting the *<CR>* key so you can skip the lines
+you don't need And the slices windows automatically closes when you insert the
+last line in the slice
+
+							  |code-slices-mappings|
+
+5. Slices window mappings
+
+After executing the command *ShowSlices* the slices windows is shown and it
+obtains the cursor to let you insert the slices in your current buffer. When
+the slices window is created, the plugin creates the following mapping:
+
+*<Tab>*		To let you moving to the next slice
+*<BS>*		To let you moving to the previous slice
+*<CR>*		To insert the current slice and close the slices window
+*<Space>*	To insert the current slice and stay in the slices window
+
+The *<Tab>* and *<BS>* support counts to move faster between slices; the *<CR>* 
+and *<Space>* Support counts when you are inserting a FluentSlice
 
 " vim:tw=78:ts=8:sw=8:sts=8:noet:ft=help:norl:
+
