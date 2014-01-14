@@ -23,7 +23,11 @@ if !exists("g:keep_open_unactive_slices")
     let g:keep_open_unactive_slices=0
 endif
 
-fun! s:show_slices() abort "{{{
+fun! s:show_slices(...) abort "{{{
+  let ftype = ''
+  if a:0 > 0
+    let ftype = a:1
+  endif
   try
     call s:verify_not_called_from_slices()
   catch /CALLED FROM SLICES/
@@ -32,7 +36,7 @@ fun! s:show_slices() abort "{{{
   endtry
   call s:prepare_to_auto_hide()
   try
-    call s:create_window_if_needed()
+    call s:create_window_if_needed(ftype)
     call s:mappings_for_code_slices_window()
   catch /No Slices/
     echohl WarningMsg | echo 'No Slices' | echohl None
@@ -87,9 +91,12 @@ fun! s:load_slices(ft)
   return 1
 endfunction
 
-fun! s:create_window_if_needed() "{{{
+fun! s:create_window_if_needed(ftype) "{{{
+  let type = a:ftype
+  if type == ''
+    let type=&ft
+  endif
   let working_window = bufnr('%')
-  let type = &ft
   let current_window = bufwinnr('^slices$')
   if current_window < 0
     call s:open_slices_window()
@@ -516,7 +523,7 @@ fun! s:edit_slices_file() "{{{
 endfunction "}}}
 
 au FileType slices call Set_Bot_FT()
-command! ShowSlices call s:show_slices()
+command! -nargs=? ShowSlices call s:show_slices(<f-args>)
 command! -nargs=? EditSlicesFile call <SID>edit_slices_file()
 command! -nargs=? -range=1       CreateSlice <line1>,<line2> call New_slice_from_range(<q-args>)
 command! -nargs=? -range=1 CreateFluentSlice <line1>,<line2> call New_fluent_slice_from_range(<q-args>)
