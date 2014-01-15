@@ -522,9 +522,22 @@ fun! s:edit_slices_file() "{{{
   exe "e " . path
 endfunction "}}}
 
+fun! s:show_slices_group(group) "{{{
+  call s:show_slices()
+  normal zM
+  let pos = searchpos('^Group ' . a:group)
+  if pos[0] == 0
+    normal zv
+  else
+    call setpos('.', [0, pos[0], pos[1], 0])
+    call SlicesTabMoving('')
+  endif
+endfunction "}}}
+
 au FileType slices call Set_Bot_FT()
 command! -nargs=? ShowSlices call s:show_slices(<f-args>)
 command! -nargs=? EditSlicesFile call <SID>edit_slices_file()
 command! -nargs=? -range=1       CreateSlice <line1>,<line2> call New_slice_from_range(<q-args>)
 command! -nargs=? -range=1 CreateFluentSlice <line1>,<line2> call New_fluent_slice_from_range(<q-args>)
+command! -nargs=1 ShowSlicesGroup call s:show_slices_group(<q-args>)
 

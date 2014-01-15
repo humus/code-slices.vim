@@ -12,6 +12,7 @@ Before:
     let lines += ['Slice foo 2', 'This', 'is', 'too']
     call writefile(lines, g:path_to_script . '/code-slices/slices/foo.slices')
     let lines = ['Group default bar', 'Slice bar 1', 'bar slice', 'bar 1']
+    let lines += ['Group bargroup', 'Slice bar-slice', 'inside', 'bar-group']
     call writefile(lines, g:path_to_script . '/code-slices/slices/bar.slices')
     let g:old_path = g:slices_preferred_path
     let g:slices_preferred_path = g:path_to_script . '/code-slices/'
@@ -115,6 +116,17 @@ Do:
 Expect:
   bar slice
   bar 1
+
+Given:
+  
+Do:
+  :set ft=bar\<CR>
+  :ShowSlicesGroup bargroup\<CR>
+  \<CR>
+Expect:
+  inside
+  bar-group
+
 Given:
   
 Do:
