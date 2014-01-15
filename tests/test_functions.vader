@@ -130,6 +130,20 @@ Expect:
 Given:
   
 Do:
+  :EditSlicesFile bar\<CR>ggy\<C-o>:sp\<CR>
+  \<C-o>:bd!\<CR>:%d\<CR>pggdd
+Expect:
+  Group default bar
+  Slice bar 1
+  bar slice
+  bar 1
+  Group bargroup
+  Slice bar-slice
+  inside
+  bar-group
+Given:
+  
+Do:
   :EditSlicesFile\<CR>ggyG\<C-o>:sp\<CR>
   \<C-o>:bd!\<CR>:%d\<CR>pggdd
 

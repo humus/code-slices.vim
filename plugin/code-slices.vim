@@ -1,6 +1,6 @@
-"if exists( "g:loaded_code_slices" )
-    "finish
-"endif
+if exists( "g:loaded_code_slices" )
+    finish
+endif
 let g:loaded_code_slices = 1
 
 " variable used in a little hack to auto-close slices window, since slices
@@ -517,8 +517,12 @@ fun! Has_pending_group_last(lines) "{{{
   return 0
 endfunction "}}}
 
-fun! s:edit_slices_file() "{{{
-  let path = g:slices_preferred_path . '/slices/' . &ft . '.slices'
+fun! s:edit_slices_file(...) "{{{
+  let type = &ft
+  if a:0 > 0 && substitute(a:1, '\v^\s+|\s+$', '' , 'g') != ''
+    let type = a:1
+  endif
+  let path = g:slices_preferred_path . '/slices/' . type . '.slices'
   exe "e " . path
 endfunction "}}}
 
@@ -534,10 +538,24 @@ fun! s:show_slices_group(group) "{{{
   endif
 endfunction "}}}
 
+fun! SlicesCompleteGroup(...) "{{{
+  let file = g:slices_preferred_path . '/slices/' . &ft . '.slices'
+  let completion = []
+  if filereadable(file)
+    let lines = readfile(file)
+    echom '1 lines len: ' . len(lines)
+    let lines = filter(lines,  "v:val =~? '\\v^Group " . a:1 . "'")
+    echom '2 lines len: ' . len(lines)
+    let lines = map(lines, "substitute(v:val, '\\vGroup\\s+', '', '')")
+    let completion += lines
+  endif
+  return completion
+endfunction "}}}
+
 au FileType slices call Set_Bot_FT()
 command! -nargs=? ShowSlices call s:show_slices(<f-args>)
-command! -nargs=? EditSlicesFile call <SID>edit_slices_file()
+command! -nargs=? EditSlicesFile call <SID>edit_slices_file(<q-args>)
 command! -nargs=? -range=1       CreateSlice <line1>,<line2> call New_slice_from_range(<q-args>)
 command! -nargs=? -range=1 CreateFluentSlice <line1>,<line2> call New_fluent_slice_from_range(<q-args>)
-command! -nargs=1 ShowSlicesGroup call s:show_slices_group(<q-args>)
+command! -nargs=1 -complete=customlist,SlicesCompleteGroup ShowSlicesGroup call s:show_slices_group(<q-args>)
 
