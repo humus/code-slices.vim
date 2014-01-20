@@ -254,9 +254,7 @@ fun! Normalize_indent(lines) "{{{
       let indent_level = len_indent / g:slices_tab_space
       let buffer_indent = ''
       let counter = 0
-      for position in range(indent_level * &ts)
-        let buffer_indent .= ' '
-      endfor
+      let buffer_indent .= repeat(' ', indent_level * &ts)
       let working_lines[index] = substitute(working_lines[index], '\v^(\s+)(\s)@!', buffer_indent, '')
     endfor
   endif
@@ -412,8 +410,11 @@ endfunction "}}}
 
 fun! s:new_slice(name, prefix, line1, line2) "{{{
   let slices_dir = g:slices_preferred_path . '/slices/' 
+  if !isdirectory(g:slices_preferred_path)
+    call match(g:slices_preferred_path, 'p')
+  endif
   if !isdirectory(slices_dir)
-      call mkdir(slices_dir, 'p')
+    call mkdir(slices_dir, 'p')
   endif
   let slices_file = slices_dir . &ft . '.slices'
   let lines_in_file = s:get_lines_from_file(slices_file)
@@ -422,7 +423,8 @@ fun! s:new_slice(name, prefix, line1, line2) "{{{
     let lines_in_slice += ['Group pending']
   endif
 
-  let slice_name=substitute(a:prefix . 'Slice ' . a:name, '\v^\s*|\s*$', '' , 'g')
+  "line 'Slice "name"' trimmed
+  let slice_name=substitute(a:prefix . 'Slice ' . a:name, '\v^\s*|\s*$', '' , 'g') 
   let lines_in_slice += [slice_name]
         \ + s:format_slice_lines(Extract_Lines(a:line1, a:line2))
 
@@ -479,9 +481,7 @@ fun! s:format_to_slices_indent(line) "{{{
   if &ts != g:slices_tab_space
     let indent_level = len(split(ret_line, '\v\s{' . &ts . '}', 1)) - 1
     let indent = ''
-    for level in range(g:slices_tab_space * indent_level)
-      let indent .= ' '
-    endfor
+    let indent .= repeat(' ', g:slices_tab_space * indent_level)
     let ret_line = substitute(ret_line, '\v\s*', indent, '')
   endif
   return ret_line

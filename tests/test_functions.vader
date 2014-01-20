@@ -51,7 +51,7 @@ Expect:
 
 Given:
           a
-          new
+              new
           slice
 Do:
   :setlocal sts=4 ts=4 sw=4\<CR>
@@ -60,10 +60,10 @@ Do:
   :ShowSlices\<CR>\<BS>\<CR>
 Expect:
           a
-          new
+              new
           slice
           a
-          new
+              new
           slice
 
 Before:
@@ -78,7 +78,6 @@ After:
 Given:
   one two
 Do:
-  :echom getline(1)\<CR>
   :ShowSlices\<CR>\<BS>\<CR>
 Expect:
   one two
