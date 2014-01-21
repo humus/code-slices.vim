@@ -49,3 +49,7 @@ Slice by using a visual selection
 In general you should not be writing the slices you want to use, those slices
 are created by executing the CreateSlice and CreateFluentSlice commands,
 however you need to manually edit the slices files to clasify them on groups
+
+
+Plugin by Roberto Bernab&eacute; Distributed under the same terms as Vim
+itself.  See `:help license`.
