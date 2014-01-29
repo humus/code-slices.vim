@@ -538,6 +538,13 @@ fun! s:show_slices_group(group) "{{{
   endif
 endfunction "}}}
 
+fun! WhichSlicesFilesAreThere(...) "{{{
+  let files = split(globpath(g:slices_preferred_path, "slices/*"), '\n')
+  let completion = map(files, 'matchstr(v:val, ''\v.+\W\zs\w+\ze\.slices'')')
+  let completion = filter(completion, 'v:val =~? ''\v^' . a:1 .  '''')
+  return completion
+endfunction "}}}
+
 fun! SlicesCompleteGroup(...) "{{{
   let file = g:slices_preferred_path . '/slices/' . &ft . '.slices'
   let completion = []
@@ -554,7 +561,7 @@ endfunction "}}}
 
 au FileType slices call Set_Bot_FT()
 command! -nargs=? ShowSlices call s:show_slices(<f-args>)
-command! -nargs=? EditSlicesFile call <SID>edit_slices_file(<q-args>)
+command! -nargs=? -complete=customlist,WhichSlicesFilesAreThere EditSlicesFile call <SID>edit_slices_file(<q-args>)
 command! -nargs=? -range=1       CreateSlice <line1>,<line2> call New_slice_from_range(<q-args>)
 command! -nargs=? -range=1 CreateFluentSlice <line1>,<line2> call New_fluent_slice_from_range(<q-args>)
 command! -nargs=1 -complete=customlist,SlicesCompleteGroup ShowSlicesGroup call s:show_slices_group(<q-args>)
