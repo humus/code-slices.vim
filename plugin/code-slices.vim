@@ -60,15 +60,17 @@ fun! s:mappings_for_code_slices_window() "{{{
   nnoremap <silent><buffer> u <Nop>
   nnoremap <silent><buffer> p <Nop>
   nnoremap <silent><buffer> P <Nop>
-  nnoremap <silent><buffer> <C-o> <Nop>
+  nnoremap <silent><buffer> i <Nop>
+  nnoremap <silent><buffer> I <Nop>
+  nnoremap <silent><buffer> a <Nop>
+  nnoremap <silent><buffer> A <Nop>
+  nnoremap <silent><buffer> o <Nop>
+  nnoremap <silent><buffer> O <Nop>
   "Insert slice with <CR>
   nnoremap <silent><buffer> <CR> :<C-U>call <SID>insert_current_slice(1, v:count1)<CR>
   nnoremap <silent><buffer> o za
   nnoremap <silent><buffer> <space> :<C-U>call <SID>insert_current_slice_and_return(0, v:count1)<CR>
-  augroup slices
-    au!
-    au InsertEnter <buffer> normal 
-  augroup END
+  "Don't remove used internally in slices.vim
   let b:auto_close_folds=1
 endfunction "}}}
 
@@ -114,6 +116,13 @@ fun! s:create_window_if_needed(ftype) "{{{
   exe "set ft=" . type . ".slices"
   normal zM
   call SlicesTabMoving('')
+  fun! s:get_lines_from_file(file_name) "{{{
+    let lines = []
+    if filereadable(a:file_name)
+      let lines = readfile(a:file_name)
+    endif
+    return lines
+  endfunction "}}}
   normal zv
   let g:ignore_next_buf_enter = 1
 endfunction "}}}
@@ -264,10 +273,8 @@ endfunction "}}}
 
 fun! Append_lines(lines) "{{{
   let line_nr = line('.')
-  for line in a:lines
-    call append(line_nr, line)
-    let line_nr += 1
-  endfor
+  call append(line_nr, a:lines)
+  let line_nr += len(a:lines)
 endfunction "}}}
 
 fun! s:get_lines_from_bounds(bounds) "{{{

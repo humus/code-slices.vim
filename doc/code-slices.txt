@@ -12,16 +12,15 @@ CONTENTS                                                  *code-slices-contents*
 4. Writing And editting slices 				        |writing-slices|
 5. Slices window mappings				  |code-slices-mappings|
 
-1. Purpose						   |code-slices-purpose|
-
-This plugin is developed by the need of collect 'slices' of code to reuse them
-on across a single or multiple projects in a way that results easy, intuitive,
-fast and even fun.
+This plugin is developed because I feel the need of collect 'slices' of code
+to reuse them on across a single or multiple projects in a way that results
+easy, intuitive, fast and even fun. So you can think about this plugin as a
+copy-paste on esteroids
 
 2. Usage						     *code-slices-usage*
 
-When finishing writing a fragment of code and you know you will use that
-fragment again, it's adviced to save that fragment in a slice. the
+When finishing writing a fragment of code and you know you will use it again
+soon or later, it's adviced to save that fragment in a slice. the
 |code-slices| plugin provides a command to do it. To create the slice, just
 select in visual mode the lines you want to keep and execute the command
 |CreateSlice| You can specify a slice name when executing the command or if is
@@ -37,18 +36,20 @@ and then executing the command >
 <
 
 Will result in the following lines in the related slices file: >
+
  Group pending
  Slice if is dir
  if !isdir('slices')
      return 1
  endif
 <
+
 The slices file will be stored inside a configutable directory and it's name
-is given by the file type you are editing and the extension |.slices| which is
-stored inside a directory named |slices| which in turn is stored in a a
-configurable path given by the variable |g:slices_preferred_path| for example,
-when editing a |.vim| file if you create a slice, it will be appended to the
-file |vim.slices| in a path like the following: >
+is given by the file type you are editing and the extension |.slices| which in
+turn is stored inside a directory named |slices| which in turn is stored in a
+a configurable path given by the variable |g:slices_preferred_path| for
+example, when editing a |.vim| file if you create a slice, it will be appended
+to the file |vim.slices| in a path like the following: >
 
  $HOME
  |- slices
@@ -58,26 +59,42 @@ file |vim.slices| in a path like the following: >
 After adding a slice you can see it inside the slide collection when you
 execute the |ShowSlices| command.
 
-3. commands					        *code-slices-commands*
+3. commands						*code-slices-commands*
 
-ShowSlices~
+							*ShowSlices*
 
-Shows you the previously created slices in the slices window.
+Shows the previously created slices in the slices window. For the filetype of
+the current file or for the file type you specify as parameter
 
-CreateSlice~
+							*ShowSlicesGroup*
+
+Shows previously created slices in the slices window and jumps to the group
+passed as argument
+
+							*CreateSlice*
 
 Creates a new slice with the current line or with the visual selected lines
+For the file type of the current buffer
 
-CreateFluentSlice~
+CreateFluentSlice					*CreateFluentSlice*
 
-Creates a special kind of slice which can be inserted one line at time
+Like |CreateSlice| but create a Fluent Slice which is a slice that can be
+inserted line by line
 
-EditSlicesFile~
+							*EditSlicesFile*
 
 This command opens for edition the slices file for the filetype in the current
 buffer
 
-4. Writing and editting Slices					*writing-slices*
+4. Writing and editting Slices				*writing-slices*
+
+The syntax of a slice files Is very simple It is just |Groups| and |Slices| to
+define a group you start a line with the the word Group with no spaces before
+it and, to define a slice you just have to start the line with the word Slice.
+Both types of definition supports adding text after it. For groups the text
+after the keyword |Group| is the name of the group that used to locate the
+group when using the command |ShowSlicesGroup|; for the slices, the text after
+the keyword is used just to give you a hint about what that slices do.
 
 Slices created with the |CreateSlice| and |CreateFluentSlice| commands are
 automatically added to the group 'pending' which is created if not exists;
@@ -126,23 +143,23 @@ same syntax as the regular slices but with the keyword |FluentSlice| instead
 of |Slice| I.E. >
 
  Group django
- Slice from django
+ FluentSlice from django
  from django.core.exceptions import PermissionDenied
  from django.http import Http404
  from django.http import HttpResponse, HttpResponseNotFound
  from django.shortcuts import render_to_response
 <
-When you start to the insertion of this slice from the slices window, you
-insert one line at time by hitting the |<CR>| key so you can skip the lines
-you don't need And the slices windows automatically closes when you insert the
-last line in the slice
+When you start the insertion of this slice from the slices window, slice is
+inserted line bt line |<CR>| key so you can skip the lines you don't need And
+the slices windows automatically closes when you insert the last line of the
+slice
 
 							  *code-slices-mappings*
 
 5. Slices window mappings
 
 After executing the command |ShowSlices| the slices windows is shown and it
-obtains the cursor to let you insert the slices in your current buffer. When
+obtains the cursor to let you insert the slices in your working buffer. When
 the slices window is created, the plugin creates the following mapping:
 
 |<Tab>|		To let you moving to the next slice
