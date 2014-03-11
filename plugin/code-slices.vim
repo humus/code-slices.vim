@@ -194,8 +194,10 @@ fun! s:perform_fluent_slice_insert(bounds, count) abort "{{{
       let insert_num = 1
       while fluent_line_idx < len(slice_lines) && insert_num <= a:count
         let fluent_line = slice_lines[fluent_line_idx]
-        call s:append_fluent_line(fluent_line)
-        call setpos('.', [0, line('.') + 1, len(getline(line('.')+1)), 0])
+        let is_moved = s:append_fluent_line(fluent_line)
+        if is_moved
+          call setpos('.', [0, line('.') + 1, len(getline(line('.')+1)), 0])
+        endif
         execute slices_window . 'wincmd w'
         let cur_line = line('.')
         call setpos('.', [0, cur_line + 1, virtcol('.'), 0])
@@ -216,10 +218,13 @@ fun! s:perform_fluent_slice_insert(bounds, count) abort "{{{
 endfunction "}}}
 
 fun! s:append_fluent_line(fluent_line) "{{{
+  echom line('.')
   if getline(line('.')) =~? '\v^[[:space:]]*$'
     call setline(line('.'), a:fluent_line)
+    return 0
   else
     call Append_lines([a:fluent_line])
+    return 1
   endif
 endfunction "}}}
 
