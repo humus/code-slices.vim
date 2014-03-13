@@ -218,7 +218,6 @@ fun! s:perform_fluent_slice_insert(bounds, count) abort "{{{
 endfunction "}}}
 
 fun! s:append_fluent_line(fluent_line) "{{{
-  echom line('.')
   if getline(line('.')) =~? '\v^[[:space:]]*$'
     call setline(line('.'), a:fluent_line)
     return 0
@@ -562,9 +561,7 @@ fun! SlicesCompleteGroup(...) "{{{
   let completion = []
   if filereadable(file)
     let lines = readfile(file)
-    echom '1 lines len: ' . len(lines)
     let lines = filter(lines,  "v:val =~? '\\v^Group " . a:1 . "'")
-    echom '2 lines len: ' . len(lines)
     let lines = map(lines, "substitute(v:val, '\\vGroup\\s+', '', '')")
     let completion += lines
   endif
