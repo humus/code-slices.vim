@@ -569,7 +569,7 @@ fun! SlicesCompleteGroup(...) "{{{
 endfunction "}}}
 
 au FileType slices call Set_Bot_FT()
-command! -nargs=? ShowSlices call s:show_slices(<f-args>)
+command! -nargs=? -complete=customlist,WhichSlicesFilesAreThere ShowSlices call s:show_slices(<f-args>)
 command! -nargs=? -complete=customlist,WhichSlicesFilesAreThere EditSlicesFile call <SID>edit_slices_file(<q-args>)
 command! -nargs=? -range=1       CreateSlice <line1>,<line2> call New_slice_from_range(<q-args>)
 command! -nargs=? -range=1 CreateFluentSlice <line1>,<line2> call New_fluent_slice_from_range(<q-args>)
