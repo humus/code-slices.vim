@@ -98,10 +98,10 @@ the keyword is used just to give you a hint about what that slices do.
 
 Slices created with the |CreateSlice| and |CreateFluentSlice| commands are
 automatically added to the group 'pending' which is created if not exists;
-however this probably is not what you want or need and in this case you need
-to manually edit the slices file. You can edit the file either by directly
-open the file in vim or by using the |EditSlicesFile| . The slices file will
-then appear with syntax higlight of the filetype it represents and with syntax
+however this probably is not what you want and in this case you need to
+manually edit the slices file. You can edit the file either by directly open
+the file in vim or by using the |EditSlicesFile| . The slices file will then
+appear with syntax higlight of the filetype it represents and with syntax
 higlight for lines beggining with the words |Slice| , |FluentSlice| and
 |Group| which represents the parts of a slices file
 
@@ -166,9 +166,13 @@ the slices window is created, the plugin creates the following mapping:
 |<BS>|		To let you moving to the previous slice
 |<CR>|		To insert the current slice and close the slices window
 |<Space>|	To insert the current slice and stay in the slices window
-
+|g<Tab>|	Move to the next group
+|g<BS>| 	Move to the previous group
+|g<Space>|	Same as |<Space>| but inserts slice above instead of below
+|g<CR>| 	Same as |<CR>| but inserts slice above instead of below
 The |<Tab>| and |<BS>| support counts to move faster between slices; the |<CR>| 
 and |<Space>| Support counts when you are inserting a FluentSlice
+
 
 " vim:tw=78:ts=8:sw=8:sts=8:noet:ft=help:norl:
 

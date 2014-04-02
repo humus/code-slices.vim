@@ -10,17 +10,17 @@ let g:ignore_next_buf_enter = 0
 let g:slices_tab_space = 2
 
 if !exists("g:slices_use_vertical_split")
-    let g:slices_use_vertical_split = 1
+  let g:slices_use_vertical_split = 1
 endif
 
 if !exists( "g:slices_preferred_path" )
-    let g:slices_preferred_path = fnameescape(expand('$HOME') . '/.vim')
-    if has('win32')
-        let g:slices_preferred_path = fnameescape(expand('$HOME') . '\vimfiles')
-    endif
+  let g:slices_preferred_path = fnameescape(expand('$HOME') . '/.vim')
+  if has('win32')
+    let g:slices_preferred_path = fnameescape(expand('$HOME') . '\vimfiles')
+  endif
 endif
 if !exists("g:keep_open_unactive_slices")
-    let g:keep_open_unactive_slices=0
+  let g:keep_open_unactive_slices=0
 endif
 
 fun! s:show_slices(...) abort "{{{
@@ -49,10 +49,9 @@ fun! s:verify_not_called_from_slices() "{{{
   endif
 endfunction "}}}
 
-fun! s:insert_current_slice_and_return(close_slices_window, count) "{{{
-  call <SID>insert_current_slice(a:close_slices_window, a:count)
+fun! s:insert_current_slice_and_return(close_slices_window, insert_above, count) "{{{
+  call <SID>insert_current_slice(a:close_slices_window, a:insert_above, a:count)
   call <SID>go_to_slices_window()
-  return "\<Nop>"
 endfunction "}}}
 
 fun! s:mappings_for_code_slices_window() "{{{
@@ -67,9 +66,11 @@ fun! s:mappings_for_code_slices_window() "{{{
   nnoremap <silent><buffer> o <Nop>
   nnoremap <silent><buffer> O <Nop>
   "Insert slice with <CR>
-  nnoremap <silent><buffer> <CR> :<C-U>call <SID>insert_current_slice(1, v:count1)<CR>
+  nnoremap <silent><buffer> <CR> :<C-U>call <SID>insert_current_slice(1, 0, v:count1)<CR>
   nnoremap <silent><buffer> o za
-  nnoremap <silent><buffer> <space> :<C-U>call <SID>insert_current_slice_and_return(0, v:count1)<CR>
+  nnoremap <silent><buffer> <space> :<C-U>call <SID>insert_current_slice_and_return(0, 0, v:count1)<CR>
+  nnoremap <silent><buffer> g<CR> :<C-U>call <SID>insert_current_slice(1, 1, v:count1)<CR>
+  nnoremap <silent><buffer> g<Space> :<C-U>call <SID>insert_current_slice_and_return(0, 1, v:count1)<CR>
   "Don't remove used internally in slices.vim
   let b:auto_close_folds=1
 endfunction "}}}
@@ -133,7 +134,7 @@ fun! s:open_slices_window()
     vertical resize 45
   else
     keepalt botright new
-    resize 10
+    resize 15
   endif
   silent f slices
   setlocal wrap buftype=nowrite bufhidden=wipe nobuflisted noswapfile number
@@ -144,7 +145,7 @@ fun! s:go_to_slices_window() "{{{
   silent! execute current_window.'wincmd w'
 endfunction "}}}
 
-fun! s:insert_current_slice(auto_hide, count) "{{{
+fun! s:insert_current_slice(auto_hide, insert_above, count) "{{{
   let auto_hide = a:auto_hide
   let bounds = s:find_slice_bounds()
   if !has_key(bounds, 'slice_start')
@@ -161,7 +162,7 @@ fun! s:insert_current_slice(auto_hide, count) "{{{
     echohl WarningMsg | echo 'Window not reacheable' | echohl None
     return
   endif
-  call Update_and_format_buffer(lines)
+  call s:update_and_format_buffer(lines, a:insert_above)
   let slices_window = bufwinnr('^slices$')
   if auto_hide != 0 && slices_window != -1
     execute slices_window. 'wincmd w'
@@ -189,14 +190,15 @@ fun! s:perform_fluent_slice_insert(bounds, count) abort "{{{
     let fluent_line_idx = line('.') - bounds['slice_start']
     let cur_line = line('.')
     if s:switch_to_destination_buffer()
-      call s:ensure_reference_line()
+      call s:ensure_reference_line(a:bounds['slice_start'])
       let slice_lines = s:format_lines_in_slice(slice_lines, s:reference_line)
       let insert_num = 1
       while fluent_line_idx < len(slice_lines) && insert_num <= a:count
         let fluent_line = slice_lines[fluent_line_idx]
+        let prev_line = line('.')
         let is_moved = s:append_fluent_line(fluent_line)
         if is_moved
-          call setpos('.', [0, line('.') + 1, len(getline(line('.')+1)), 0])
+          call setpos('.', [0, prev_line + 1, len(getline(line('.')+1)), 0])
         endif
         execute slices_window . 'wincmd w'
         let cur_line = line('.')
@@ -222,20 +224,24 @@ fun! s:append_fluent_line(fluent_line) "{{{
     call setline(line('.'), a:fluent_line)
     return 0
   else
-    call Append_lines([a:fluent_line])
+    call Append_lines([a:fluent_line], 0)
     return 1
   endif
 endfunction "}}}
 
-fun! s:ensure_reference_line() "{{{
-  if !exists('s:reference_line')
+fun! s:ensure_reference_line(slice_line) "{{{
+  if !exists('s:current_slice_start')
+    let s:current_slice_start = a:slice_line
+  endif
+  if !exists('s:reference_line') || a:slice_line != s:current_slice_start
     let s:reference_line = line('.')
+    let s:current_slice_start = a:slice_line
   endif
 endfunction "}}}
 
 
 fun! s:format_lines_in_slice(lines, linenr) "{{{
-  let working_lines = Normalize_indent(a:lines)
+  let working_lines = s:normalize_indent(a:lines)
   "Preserve indentation
   "0 or more spaces not followed by a space and match all chars in line
   "and substitute with 0 or more matched spaces. Also match empty lines
@@ -246,19 +252,23 @@ fun! s:format_lines_in_slice(lines, linenr) "{{{
   return working_lines
 endfunction "}}}
 
-fun! Update_and_format_buffer(lines) "{{{
-  let working_lines = s:format_lines_in_slice(a:lines, line('.'))
-  if getline(line('.')) =~? '\v^[[:space:]]*$'
+fun! s:update_and_format_buffer(lines, insert_above) "{{{
+  let is_cur_line_empty = getline(line('.')) =~? '\v^[[:space:]]*$'
+  let insert_above = !is_cur_line_empty && a:insert_above
+  let line_nr = line('.')
+  if insert_above
+    let line_nr -= 1
+  endif
+  let working_lines = s:format_lines_in_slice(a:lines, line_nr)
+  if is_cur_line_empty
     call setline(line('.'), working_lines[0])
     let working_lines = working_lines[1:]
   endif
 
-  call Append_lines(working_lines)
-  let line_nr = line('.') + len(working_lines)
-  call setpos('.', [0, line_nr, len(getline(line_nr)), 0])
+  call Append_lines(working_lines, insert_above)
 endfunction "}}}
 
-fun! Normalize_indent(lines) "{{{
+fun! s:normalize_indent(lines) "{{{
   let working_lines = a:lines
 
   if g:slices_tab_space != &ts
@@ -275,10 +285,14 @@ fun! Normalize_indent(lines) "{{{
   return working_lines
 endfunction "}}}
 
-fun! Append_lines(lines) "{{{
+fun! Append_lines(lines, insert_above) "{{{
   let line_nr = line('.')
+  if a:insert_above
+    let line_nr -= 1
+  endif
   call append(line_nr, a:lines)
   let line_nr += len(a:lines)
+  call cursor(line_nr, len(getline(line_nr))-1)
 endfunction "}}}
 
 fun! s:get_lines_from_bounds(bounds) "{{{

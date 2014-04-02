@@ -33,10 +33,17 @@ fun! s:slicesTabMoving(flag) "{{{
   call s:slicesTabMoving(a:flag)
 endfunction "}}}
 
+fun! SlicesGTabMoving(flag) "{{{
+  call search('^Group\s.*$', 'bc')
+  call s:close_when_needed()
+  call search('^Group\s.*$', a:flag)
+  call SlicesTabMoving('')
+endfunction "}}}
+
 fun! s:close_when_needed() "{{{
-    if g:keep_open_unactive_slices == 0 && b:auto_close_folds
-        normal! zc
-    endif
+  if g:keep_open_unactive_slices == 0 && b:auto_close_folds
+    normal! zc
+  endif
 endfunction "}}}
 
 fun! SlicesTabMoving(flag) "{{{
@@ -47,6 +54,8 @@ endfunction "}}}
 
 nnoremap <silent><buffer> <Tab> :<C-u>call SlicesTabMoving('')<CR>
 nnoremap <silent><buffer> <BS> :<C-u>call SlicesTabMoving('b')<CR>
+nnoremap <silent><buffer> g<Tab> :<C-u>call SlicesGTabMoving('')<CR>
+nnoremap <silent><buffer> g<BS> :<C-u>call SlicesGTabMoving('b')<CR>
 
 au BufReadPost * normal zR
 
